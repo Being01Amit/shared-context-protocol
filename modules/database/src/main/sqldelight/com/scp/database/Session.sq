@@ -1,0 +1,43 @@
+CREATE TABLE session (
+    id          TEXT NOT NULL PRIMARY KEY,
+    project_id  TEXT NOT NULL REFERENCES project(id),
+    tool_name   TEXT NOT NULL,
+    start_time  TEXT NOT NULL,
+    end_time    TEXT,
+    summary     TEXT NOT NULL DEFAULT '',
+    token_usage INTEGER,
+    status      TEXT NOT NULL DEFAULT 'open' CHECK (status IN ('open', 'closed'))
+);
+
+CREATE INDEX idx_session_project_status ON session(project_id, status);
+CREATE INDEX idx_session_start_time     ON session(start_time);
+
+insertSession:
+INSERT INTO session(id, project_id, tool_name, start_time, end_time, summary, token_usage, status)
+VALUES (:id, :projectId, :toolName, :startTime, :endTime, :summary, :tokenUsage, :status);
+
+findById:
+SELECT * FROM session WHERE id = :id;
+
+findOpenByProject:
+SELECT * FROM session WHERE project_id = :projectId AND status = 'open' ORDER BY start_time;
+
+closeSession:
+UPDATE session
+SET status      = 'closed',
+    end_time    = :endTime,
+    summary     = COALESCE(:summary, summary),
+    token_usage = COALESCE(:tokenUsage, token_usage)
+WHERE id = :id;
+
+listRecent:
+SELECT * FROM session WHERE project_id = :projectId ORDER BY start_time DESC LIMIT :limit;
+
+listChronological:
+SELECT * FROM session WHERE project_id = :projectId ORDER BY start_time;
+
+countByProject:
+SELECT count(*) FROM session WHERE project_id = :projectId;
+
+findOpenOlderThan:
+SELECT * FROM session WHERE status = 'open' AND start_time < :cutoff ORDER BY start_time;

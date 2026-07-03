@@ -1,0 +1,26 @@
+CREATE TABLE decision (
+    id         TEXT NOT NULL PRIMARY KEY,
+    project_id TEXT NOT NULL REFERENCES project(id),
+    title      TEXT NOT NULL,
+    decision   TEXT NOT NULL,
+    reason     TEXT NOT NULL DEFAULT '',
+    status     TEXT NOT NULL DEFAULT 'open'
+               CHECK (status IN ('open', 'accepted', 'superseded', 'rejected')),
+    created_at TEXT NOT NULL,
+    updated_at TEXT NOT NULL
+);
+
+CREATE INDEX idx_decision_project_status ON decision(project_id, status);
+
+insertDecision:
+INSERT INTO decision(id, project_id, title, decision, reason, status, created_at, updated_at)
+VALUES (:id, :projectId, :title, :decision, :reason, :status, :createdAt, :updatedAt);
+
+findOpenByProject:
+SELECT * FROM decision WHERE project_id = :projectId AND status = 'open' ORDER BY updated_at DESC;
+
+listByProject:
+SELECT * FROM decision WHERE project_id = :projectId ORDER BY created_at;
+
+updateStatus:
+UPDATE decision SET status = :status, updated_at = :updatedAt WHERE id = :id;

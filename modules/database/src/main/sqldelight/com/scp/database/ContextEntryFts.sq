@@ -1,0 +1,59 @@
+import com.scp.model.ContextType;
+
+-- FTS5 external-content table: stores only the inverted index; text lives once in
+-- context_entry and the index joins back by rowid, which is what lets structured
+-- filters compose with MATCH in plain SQL (ADR-8).
+CREATE VIRTUAL TABLE context_entry_fts USING fts5(
+    title,
+    content,
+    content='context_entry',
+    content_rowid='rowid',
+    tokenize='porter unicode61'
+);
+
+-- Sync triggers: the index can never drift from the table under normal operation.
+CREATE TRIGGER context_entry_ai AFTER INSERT ON context_entry BEGIN
+    INSERT INTO context_entry_fts(rowid, title, content)
+    VALUES (new.rowid, new.title, new.content);
+END;
+
+CREATE TRIGGER context_entry_ad AFTER DELETE ON context_entry BEGIN
+    INSERT INTO context_entry_fts(context_entry_fts, rowid, title, content)
+    VALUES ('delete', old.rowid, old.title, old.content);
+END;
+
+CREATE TRIGGER context_entry_au AFTER UPDATE OF title, content ON context_entry BEGIN
+    INSERT INTO context_entry_fts(context_entry_fts, rowid, title, content)
+    VALUES ('delete', old.rowid, old.title, old.content);
+    INSERT INTO context_entry_fts(rowid, title, content)
+    VALUES (new.rowid, new.title, new.content);
+END;
+
+-- One query, all filters optional: full-text MATCH composed with structured filters
+-- via joins, per docs/03 §4. bm25() is pre-selection order only; presented order
+-- comes from the shared core scoring function.
+searchEntries:
+SELECT ce.id, ce.session_id, ce.timestamp, ce.title, ce.content, ce.type, ce.priority,
+       s.tool_name, p.id AS project_id, p.name AS project_name,
+       bm25(context_entry_fts) AS fts_rank
+FROM context_entry_fts
+JOIN context_entry ce ON ce.rowid = context_entry_fts.rowid
+JOIN session s        ON s.id = ce.session_id
+JOIN project p        ON p.id = s.project_id
+WHERE context_entry_fts MATCH :query
+  AND (:projectId IS NULL OR p.id = :projectId)
+  AND (:type      IS NULL OR ce.type = :type)
+  AND (:fromTs    IS NULL OR ce.timestamp >= :fromTs)
+  AND (:toTs      IS NULL OR ce.timestamp <= :toTs)
+  AND (:tag       IS NULL OR EXISTS (
+        SELECT 1 FROM context_entry_tag t
+        WHERE t.entry_id = ce.id AND t.tag = :tag))
+ORDER BY fts_rank
+LIMIT :limit;
+
+countIndex:
+SELECT count(*) FROM context_entry_fts;
+
+-- The documented repair when scp doctor finds the index diverged from the table.
+rebuild:
+INSERT INTO context_entry_fts(context_entry_fts) VALUES ('rebuild');

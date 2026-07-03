@@ -1,0 +1,19 @@
+CREATE TABLE context_entry_tag (
+    entry_id TEXT NOT NULL REFERENCES context_entry(id) ON DELETE CASCADE,
+    tag      TEXT NOT NULL,
+    PRIMARY KEY (entry_id, tag)
+);
+
+CREATE INDEX idx_context_entry_tag_tag ON context_entry_tag(tag);
+
+insertTag:
+INSERT OR IGNORE INTO context_entry_tag(entry_id, tag) VALUES (:entryId, :tag);
+
+tagsForEntry:
+SELECT tag FROM context_entry_tag WHERE entry_id = :entryId ORDER BY tag;
+
+tagsForEntries:
+SELECT entry_id, tag FROM context_entry_tag WHERE entry_id IN :entryIds ORDER BY entry_id, tag;
+
+deleteForEntry:
+DELETE FROM context_entry_tag WHERE entry_id = :entryId;
