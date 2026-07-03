@@ -1,0 +1,26 @@
+CREATE TABLE project (
+    id          TEXT NOT NULL PRIMARY KEY,
+    name        TEXT NOT NULL UNIQUE,
+    description TEXT NOT NULL DEFAULT '',
+    created_at  TEXT NOT NULL,
+    updated_at  TEXT NOT NULL
+);
+
+insertProject:
+INSERT INTO project(id, name, description, created_at, updated_at)
+VALUES (:id, :name, :description, :createdAt, :updatedAt);
+
+findById:
+SELECT * FROM project WHERE id = :id;
+
+findByName:
+SELECT * FROM project WHERE name = :name;
+
+listAll:
+SELECT * FROM project ORDER BY name;
+
+updateDescription:
+UPDATE project SET description = :description, updated_at = :updatedAt WHERE id = :id;
+
+touch:
+UPDATE project SET updated_at = :updatedAt WHERE id = :id;

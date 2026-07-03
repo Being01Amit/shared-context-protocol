@@ -1,0 +1,63 @@
+import com.scp.model.ContextType;
+
+CREATE TABLE context_entry (
+    id         TEXT NOT NULL PRIMARY KEY,
+    session_id TEXT NOT NULL REFERENCES session(id),
+    timestamp  TEXT NOT NULL,
+    title      TEXT NOT NULL,
+    content    TEXT NOT NULL,
+    type       TEXT AS ContextType NOT NULL,
+    priority   INTEGER NOT NULL DEFAULT 3 CHECK (priority BETWEEN 1 AND 5),
+    embedding  BLOB
+);
+
+CREATE INDEX idx_context_entry_session   ON context_entry(session_id);
+CREATE INDEX idx_context_entry_timestamp ON context_entry(timestamp);
+CREATE INDEX idx_context_entry_type      ON context_entry(type);
+
+insertEntry:
+INSERT INTO context_entry(id, session_id, timestamp, title, content, type, priority, embedding)
+VALUES (:id, :sessionId, :timestamp, :title, :content, :type, :priority, NULL);
+
+findBySession:
+SELECT * FROM context_entry WHERE session_id = :sessionId ORDER BY timestamp;
+
+findRecentByType:
+SELECT ce.*
+FROM context_entry ce
+JOIN session s ON s.id = ce.session_id
+WHERE s.project_id = :projectId AND ce.type = :type
+ORDER BY ce.timestamp DESC
+LIMIT :limit;
+
+findRecent:
+SELECT ce.*
+FROM context_entry ce
+JOIN session s ON s.id = ce.session_id
+WHERE s.project_id = :projectId
+ORDER BY ce.timestamp DESC
+LIMIT :limit;
+
+listChronological:
+SELECT ce.*
+FROM context_entry ce
+JOIN session s ON s.id = ce.session_id
+WHERE s.project_id = :projectId
+ORDER BY ce.timestamp;
+
+countByProject:
+SELECT count(*)
+FROM context_entry ce
+JOIN session s ON s.id = ce.session_id
+WHERE s.project_id = :projectId;
+
+countByType:
+SELECT ce.type, count(*) AS entry_count
+FROM context_entry ce
+JOIN session s ON s.id = ce.session_id
+WHERE s.project_id = :projectId
+GROUP BY ce.type
+ORDER BY entry_count DESC;
+
+countAll:
+SELECT count(*) FROM context_entry;

@@ -1,0 +1,19 @@
+# Project detekt config, layered on top of the default ruleset (buildUponDefaultConfig = true).
+style:
+  MaxLineLength:
+    maxLineLength: 140
+  ReturnCount:
+    max: 4
+
+complexity:
+  LongParameterList:
+    functionThreshold: 8
+    constructorThreshold: 10
+  LongMethod:
+    threshold: 80
+  CyclomaticComplexMethod:
+    threshold: 18
+
+naming:
+  FunctionNaming:
+    ignoreAnnotated: ['Test']

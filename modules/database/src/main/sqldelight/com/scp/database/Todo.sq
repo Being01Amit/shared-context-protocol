@@ -1,0 +1,26 @@
+CREATE TABLE todo (
+    id          TEXT NOT NULL PRIMARY KEY,
+    project_id  TEXT NOT NULL REFERENCES project(id),
+    description TEXT NOT NULL,
+    status      TEXT NOT NULL DEFAULT 'open'
+                CHECK (status IN ('open', 'in_progress', 'done', 'dropped')),
+    owner       TEXT,
+    created_at  TEXT NOT NULL
+);
+
+CREATE INDEX idx_todo_project_status ON todo(project_id, status);
+
+insertTodo:
+INSERT INTO todo(id, project_id, description, status, owner, created_at)
+VALUES (:id, :projectId, :description, :status, :owner, :createdAt);
+
+findOpenByProject:
+SELECT * FROM todo
+WHERE project_id = :projectId AND status IN ('open', 'in_progress')
+ORDER BY created_at;
+
+listByProject:
+SELECT * FROM todo WHERE project_id = :projectId ORDER BY created_at;
+
+updateStatus:
+UPDATE todo SET status = :status WHERE id = :id;

@@ -1,0 +1,39 @@
+# Shared Context Protocol (SCP)
+
+**Git for AI Context** — a local-first, cross-AI persistent context and memory layer that sits behind the Model Context Protocol (MCP).
+
+SCP is **not** an AI. It is the storage and retrieval layer that lets Claude Code, ChatGPT, Cursor, Antigravity, Gemini CLI, and any future MCP-compatible tool continue the same project without losing context:
+
+```
+Claude Code → work 2h → /update-context → SCP stores everything
+                     ...later...
+Antigravity → /hydrate-context → continues exactly where Claude stopped
+```
+
+## Status
+
+| Phase | Scope | State |
+|-------|-------|-------|
+| 1 | Architecture, module structure, SQLDelight schema, technology decisions, session resolution, hydration ranking spec | ✅ Done (docs) |
+| 2 | Gradle scaffold, `model` + `config` + `database` modules (compiling, tested) | ⏳ Awaiting approval |
+| 3 | `core` use-cases, `search`, `markdown` | Planned |
+| 4 | MCP server (stdio), CLI (Clikt), skills | Planned |
+| 5 | Integration tests (incl. concurrent writes), `scp doctor`, docs polish | Planned |
+
+## Documentation (Phase 1 deliverables)
+
+- [Architecture & module structure](docs/01-architecture.md)
+- [Technology decisions](docs/02-technology-decisions.md) — pinned stack, JVM cold-start call, deviations flagged for approval
+- [Database schema (SQLDelight)](docs/03-database-schema.md) — tables, FTS5 external-content design, PRAGMAs, indexes
+- [Session resolution](docs/04-session-resolution.md) — pseudocode + sequence diagrams, concurrency handling
+- [Hydration ranking](docs/05-hydration-ranking.md) — scoring formula, default weights, token budget algorithm
+
+## Design principles (non-negotiable)
+
+1. **Local first** — fully offline, zero network calls on the core path.
+2. **Cross-AI** — no client-specific storage; any MCP client works identically.
+3. **Fast** — hydration < 1s for ~500 entries / ~50 sessions, including JVM startup.
+4. **Human readable** — everything mirrored to plain Markdown under `storage/markdown/`.
+5. **Extensible** — concrete extension points for embeddings, sync, git integration.
+6. **Concurrency-safe** — WAL mode + transactions + retry; concurrent tools never corrupt or silently merge each other's work.
+7. **Bounded output** — every read path has an explicit token ceiling; truncation is always signaled, never silent.

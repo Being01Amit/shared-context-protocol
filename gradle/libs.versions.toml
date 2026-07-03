@@ -1,0 +1,44 @@
+# Single source of dependency versions (pinned; verified against Maven Central 2026-07-04).
+[versions]
+kotlin = "2.3.21"
+kotlinx-serialization = "1.9.0"
+kotlinx-datetime = "0.6.2"
+kotlinx-coroutines = "1.10.2"
+sqldelight = "2.3.2"
+sqlite-jdbc = "3.49.1.0"
+mcp-sdk = "0.14.0"
+kaml = "0.83.0"
+konform = "0.11.1"
+clikt = "5.0.3"
+kotlin-logging = "7.0.7"
+logback = "1.5.18"
+junit = "5.13.4"
+mockk = "1.14.3"
+ktlint-plugin = "14.2.0"
+detekt = "1.23.8"
+
+[libraries]
+kotlinx-serialization-json = { module = "org.jetbrains.kotlinx:kotlinx-serialization-json", version.ref = "kotlinx-serialization" }
+kotlinx-datetime = { module = "org.jetbrains.kotlinx:kotlinx-datetime", version.ref = "kotlinx-datetime" }
+kotlinx-coroutines-core = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-core", version.ref = "kotlinx-coroutines" }
+sqldelight-sqlite-driver = { module = "app.cash.sqldelight:sqlite-driver", version.ref = "sqldelight" }
+sqldelight-runtime = { module = "app.cash.sqldelight:runtime", version.ref = "sqldelight" }
+sqldelight-dialect-sqlite338 = { module = "app.cash.sqldelight:sqlite-3-38-dialect", version.ref = "sqldelight" }
+sqlite-jdbc = { module = "org.xerial:sqlite-jdbc", version.ref = "sqlite-jdbc" }
+mcp-sdk-server = { module = "io.modelcontextprotocol:kotlin-sdk-server", version.ref = "mcp-sdk" }
+kaml = { module = "com.charleskorn.kaml:kaml", version.ref = "kaml" }
+konform = { module = "io.konform:konform", version.ref = "konform" }
+clikt = { module = "com.github.ajalt.clikt:clikt", version.ref = "clikt" }
+kotlin-logging = { module = "io.github.oshai:kotlin-logging-jvm", version.ref = "kotlin-logging" }
+logback-classic = { module = "ch.qos.logback:logback-classic", version.ref = "logback" }
+junit-bom = { module = "org.junit:junit-bom", version.ref = "junit" }
+junit-jupiter = { module = "org.junit.jupiter:junit-jupiter" }
+junit-launcher = { module = "org.junit.platform:junit-platform-launcher" }
+mockk = { module = "io.mockk:mockk", version.ref = "mockk" }
+
+[plugins]
+kotlin-jvm = { id = "org.jetbrains.kotlin.jvm", version.ref = "kotlin" }
+kotlin-serialization = { id = "org.jetbrains.kotlin.plugin.serialization", version.ref = "kotlin" }
+sqldelight = { id = "app.cash.sqldelight", version.ref = "sqldelight" }
+ktlint = { id = "org.jlleitschuh.gradle.ktlint", version.ref = "ktlint-plugin" }
+detekt = { id = "io.gitlab.arturbosch.detekt", version.ref = "detekt" }
