@@ -14,19 +14,23 @@ Antigravity → /hydrate-context → continues exactly where Claude stopped
 
 | Phase | Scope | State |
 |-------|-------|-------|
-| 1 | Architecture, module structure, SQLDelight schema, technology decisions, session resolution, hydration ranking spec | ✅ Done (docs) |
-| 2 | Gradle scaffold, `model` + `config` + `database` modules (compiling, tested) | ⏳ Awaiting approval |
-| 3 | `core` use-cases, `search`, `markdown` | Planned |
-| 4 | MCP server (stdio), CLI (Clikt), skills | Planned |
-| 5 | Integration tests (incl. concurrent writes), `scp doctor`, docs polish | Planned |
+| 1 | Architecture, module structure, SQLDelight schema, technology decisions, session resolution, hydration ranking spec | ✅ Done |
+| 2 | Gradle scaffold, `model` + `config` + `database` modules (compiling, tested) | ✅ Done |
+| 3 | `core` use-cases, `search`, `markdown`, `skills` | ✅ Done |
+| 4 | MCP server (stdio, official Kotlin SDK), CLI (Clikt) | ✅ Done |
+| 5 | Integration tests (incl. concurrent writes), `scp doctor`, setup guide, roadmap | ✅ Done |
 
-## Documentation (Phase 1 deliverables)
+Quick start: see the **[setup guide](docs/06-setup-guide.md)**. Build with `.\gradlew.bat build`, then `.\gradlew.bat installDist` for runnable `scp` / `scp-mcp-server` distributions.
+
+## Documentation
 
 - [Architecture & module structure](docs/01-architecture.md)
 - [Technology decisions](docs/02-technology-decisions.md) — pinned stack, JVM cold-start call, deviations flagged for approval
 - [Database schema (SQLDelight)](docs/03-database-schema.md) — tables, FTS5 external-content design, PRAGMAs, indexes
 - [Session resolution](docs/04-session-resolution.md) — pseudocode + sequence diagrams, concurrency handling
 - [Hydration ranking](docs/05-hydration-ranking.md) — scoring formula, default weights, token budget algorithm
+- [Setup guide](docs/06-setup-guide.md) — build, init, MCP client registration, CLI reference
+- [Roadmap](docs/07-roadmap.md) — future features and the extension points already reserved for them
 
 ## Design principles (non-negotiable)
 

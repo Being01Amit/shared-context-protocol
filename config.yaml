@@ -1,0 +1,18 @@
+# SCP configuration. All keys are optional; the values shown are the defaults.
+# Invalid values fail startup with a message naming the offending key (ADR-11).
+databasePath: storage/database/scp.db
+markdownPath: storage/markdown
+autoSaveIntervalSeconds: 300
+hydrationTokenLimit: 12000
+hydrationRankingWeights:
+  recency: 0.35            # w1 — exponential half-life decay term
+  priority: 0.25           # w2 — stored priority 1-5, normalized
+  tagOverlap: 0.25         # w3 — Jaccard similarity with query tags
+  type: 0.15               # w4 — per-type multiplier
+  recencyHalfLifeDays: 7
+  # typeMultipliers:       # per-type overrides in [0,1]; omitted types use docs/05 §3 defaults
+  #   MEETING: 0.2
+searchLimit: 50
+logLevel: INFO
+# secretRedactionPatterns: # extra regexes, ADDED to the built-in credential patterns
+#   - '\bACME-[0-9]{6}\b'
