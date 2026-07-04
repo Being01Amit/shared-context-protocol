@@ -54,6 +54,5 @@ LIMIT :limit;
 countIndex:
 SELECT count(*) FROM context_entry_fts;
 
--- The documented repair when scp doctor finds the index diverged from the table.
-rebuild:
-INSERT INTO context_entry_fts(context_entry_fts) VALUES ('rebuild');
+-- The FTS5 'rebuild' repair command is not expressible in SQLDelight's grammar
+-- (single-column special insert); it lives as a raw statement in FtsAdmin.rebuild().

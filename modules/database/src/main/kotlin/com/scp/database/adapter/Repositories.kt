@@ -29,11 +29,23 @@ public class SqlProjectRepository(private val db: ScpDatabase) : ProjectReposito
         )
     }
 
-    override fun findById(id: String): Project? = db.projectQueries.findById(id).executeAsOneOrNull()?.toDomain()
+    override fun findById(id: String): Project? =
+        db.projectQueries
+            .findById(id)
+            .executeAsOneOrNull()
+            ?.toDomain()
 
-    override fun findByName(name: String): Project? = db.projectQueries.findByName(name).executeAsOneOrNull()?.toDomain()
+    override fun findByName(name: String): Project? =
+        db.projectQueries
+            .findByName(name)
+            .executeAsOneOrNull()
+            ?.toDomain()
 
-    override fun listAll(): List<Project> = db.projectQueries.listAll().executeAsList().map { it.toDomain() }
+    override fun listAll(): List<Project> =
+        db.projectQueries
+            .listAll()
+            .executeAsList()
+            .map { it.toDomain() }
 
     override fun updateDescription(id: String, description: String, updatedAt: Instant) {
         db.projectQueries.updateDescription(description = description, updatedAt = updatedAt.toString(), id = id)
@@ -58,10 +70,17 @@ public class SqlSessionRepository(private val db: ScpDatabase) : SessionReposito
         )
     }
 
-    override fun findById(id: String): Session? = db.sessionQueries.findById(id).executeAsOneOrNull()?.toDomain()
+    override fun findById(id: String): Session? =
+        db.sessionQueries
+            .findById(id)
+            .executeAsOneOrNull()
+            ?.toDomain()
 
     override fun findOpenByProject(projectId: String): List<Session> =
-        db.sessionQueries.findOpenByProject(projectId).executeAsList().map { it.toDomain() }
+        db.sessionQueries
+            .findOpenByProject(projectId)
+            .executeAsList()
+            .map { it.toDomain() }
 
     override fun close(id: String, endTime: Instant, summary: String?, tokenUsage: Long?) {
         db.sessionQueries.closeSession(
@@ -73,10 +92,16 @@ public class SqlSessionRepository(private val db: ScpDatabase) : SessionReposito
     }
 
     override fun listRecent(projectId: String, limit: Long): List<Session> =
-        db.sessionQueries.listRecent(projectId, limit).executeAsList().map { it.toDomain() }
+        db.sessionQueries
+            .listRecent(projectId, limit)
+            .executeAsList()
+            .map { it.toDomain() }
 
     override fun listChronological(projectId: String): List<Session> =
-        db.sessionQueries.listChronological(projectId).executeAsList().map { it.toDomain() }
+        db.sessionQueries
+            .listChronological(projectId)
+            .executeAsList()
+            .map { it.toDomain() }
 
     override fun countByProject(projectId: String): Long = db.sessionQueries.countByProject(projectId).executeAsOne()
 }
@@ -115,6 +140,12 @@ public class SqlContextEntryRepository(private val db: ScpDatabase) : ContextEnt
 
     override fun countByProject(projectId: String): Long = db.contextEntryQueries.countByProject(projectId).executeAsOne()
 
+    override fun countByType(projectId: String): Map<ContextType, Long> =
+        db.contextEntryQueries
+            .countByType(projectId)
+            .executeAsList()
+            .associate { it.type to it.entry_count }
+
     /** Batch tag load — one IN query, no per-entry lookups. */
     private fun withTags(rows: List<com.scp.database.Context_entry>): List<ContextEntry> {
         if (rows.isEmpty()) return emptyList()
@@ -142,10 +173,16 @@ public class SqlDecisionRepository(private val db: ScpDatabase) : DecisionReposi
     }
 
     override fun findOpenByProject(projectId: String): List<Decision> =
-        db.decisionQueries.findOpenByProject(projectId).executeAsList().map { it.toDomain() }
+        db.decisionQueries
+            .findOpenByProject(projectId)
+            .executeAsList()
+            .map { it.toDomain() }
 
     override fun listByProject(projectId: String): List<Decision> =
-        db.decisionQueries.listByProject(projectId).executeAsList().map { it.toDomain() }
+        db.decisionQueries
+            .listByProject(projectId)
+            .executeAsList()
+            .map { it.toDomain() }
 
     override fun updateStatus(id: String, status: DecisionStatus, updatedAt: Instant) {
         db.decisionQueries.updateStatus(status = status.dbValue, updatedAt = updatedAt.toString(), id = id)
@@ -165,10 +202,16 @@ public class SqlTodoRepository(private val db: ScpDatabase) : TodoRepository {
     }
 
     override fun findOpenByProject(projectId: String): List<Todo> =
-        db.todoQueries.findOpenByProject(projectId).executeAsList().map { it.toDomain() }
+        db.todoQueries
+            .findOpenByProject(projectId)
+            .executeAsList()
+            .map { it.toDomain() }
 
     override fun listByProject(projectId: String): List<Todo> =
-        db.todoQueries.listByProject(projectId).executeAsList().map { it.toDomain() }
+        db.todoQueries
+            .listByProject(projectId)
+            .executeAsList()
+            .map { it.toDomain() }
 
     override fun updateStatus(id: String, status: TodoStatus) {
         db.todoQueries.updateStatus(status = status.dbValue, id = id)
@@ -188,8 +231,14 @@ public class SqlFileRepository(private val db: ScpDatabase) : FileRepository {
     }
 
     override fun findRecentlyModified(projectId: String, limit: Long): List<TrackedFile> =
-        db.fileQueries.findRecentlyModified(projectId, limit).executeAsList().map { it.toDomain() }
+        db.fileQueries
+            .findRecentlyModified(projectId, limit)
+            .executeAsList()
+            .map { it.toDomain() }
 
     override fun listByProject(projectId: String): List<TrackedFile> =
-        db.fileQueries.listByProject(projectId).executeAsList().map { it.toDomain() }
+        db.fileQueries
+            .listByProject(projectId)
+            .executeAsList()
+            .map { it.toDomain() }
 }

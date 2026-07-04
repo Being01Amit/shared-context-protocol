@@ -64,6 +64,8 @@ public interface ContextEntryRepository {
     public fun listChronological(projectId: String): List<ContextEntry>
 
     public fun countByProject(projectId: String): Long
+
+    public fun countByType(projectId: String): Map<ContextType, Long>
 }
 
 public interface DecisionRepository {

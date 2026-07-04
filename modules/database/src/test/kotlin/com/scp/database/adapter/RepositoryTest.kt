@@ -60,7 +60,10 @@ class RepositoryTest {
         entries.insert(entry)
 
         handle.driver.execute(null, "DELETE FROM context_entry WHERE id = '${entry.id}'", 0)
-        val remaining = handle.database.contextEntryTagQueries.tagsForEntry(entry.id).executeAsList()
+        val remaining =
+            handle.database.contextEntryTagQueries
+                .tagsForEntry(entry.id)
+                .executeAsList()
         assertTrue(remaining.isEmpty(), "tags should cascade on entry delete")
     }
 

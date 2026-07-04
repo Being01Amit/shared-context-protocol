@@ -15,6 +15,14 @@ detekt {
     config.setFrom(rootProject.file("detekt.yml"))
 }
 
+// Generated SQLDelight sources are not held to hand-written style rules. ktlint patterns
+// match relative to each source root, and the generated root's files land directly in
+// com/scp/database (hand-written code lives one level deeper, in .../adapter), so these
+// two patterns exclude exactly the generated files.
+tasks.withType<org.jlleitschuh.gradle.ktlint.tasks.BaseKtLintCheckTask>().configureEach {
+    exclude("com/scp/database/*.kt", "com/scp/database/database/**")
+}
+
 sqldelight {
     databases {
         create("ScpDatabase") {

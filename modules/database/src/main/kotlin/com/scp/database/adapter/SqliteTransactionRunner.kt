@@ -27,7 +27,10 @@ public class SqliteTransactionRunner(
             while (true) {
                 try {
                     return database.transactionWithResult { block() }
-                } catch (e: Exception) {
+                } catch (
+                    // Busy detection must inspect any wrapped failure; non-busy errors rethrow.
+                    @Suppress("TooGenericExceptionCaught") e: Exception,
+                ) {
                     attempt++
                     if (!isBusy(e) || attempt > MAX_RETRIES) throw e
                     Thread.sleep(BACKOFF_MS[attempt - 1])

@@ -14,12 +14,13 @@ class DriverFactoryTest {
     lateinit var tmp: Path
 
     private fun pragma(driver: SqlDriver, name: String): String =
-        driver.executeQuery(
-            identifier = null,
-            sql = "PRAGMA $name",
-            mapper = { c -> QueryResult.Value(if (c.next().value) c.getString(0).orEmpty() else "") },
-            parameters = 0,
-        ).value
+        driver
+            .executeQuery(
+                identifier = null,
+                sql = "PRAGMA $name",
+                mapper = { c -> QueryResult.Value(if (c.next().value) c.getString(0).orEmpty() else "") },
+                parameters = 0,
+            ).value
 
     @Test
     fun `connection init applies WAL and foreign keys`() {
