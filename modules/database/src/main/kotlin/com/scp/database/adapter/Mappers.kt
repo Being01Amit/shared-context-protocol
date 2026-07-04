@@ -2,7 +2,7 @@ package com.scp.database.adapter
 
 import com.scp.database.Context_entry
 import com.scp.database.Decision
-import com.scp.database.File
+import com.scp.database.File_
 import com.scp.database.Project
 import com.scp.database.Session
 import com.scp.database.Todo
@@ -68,7 +68,7 @@ internal fun Todo.toDomain(): com.scp.model.Todo =
         createdAt = Instant.parse(created_at),
     )
 
-internal fun File.toDomain(): TrackedFile =
+internal fun File_.toDomain(): TrackedFile =
     TrackedFile(
         id = id,
         projectId = project_id,

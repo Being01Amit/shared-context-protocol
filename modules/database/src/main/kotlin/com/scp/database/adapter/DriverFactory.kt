@@ -51,49 +51,52 @@ public object DriverFactory {
     }
 
     private fun createOrMigrate(driver: SqlDriver) {
-        // BEGIN IMMEDIATE serializes concurrent first-open across processes: the second
-        // process blocks here until the first finishes creating the schema.
-        driver.execute(null, "BEGIN IMMEDIATE", 0)
-        try {
-            val current = userVersion(driver)
-            val target = ScpDatabase.Schema.version
-            when {
-                current == 0L && !hasProjectTable(driver) -> {
+        // sqlite-jdbc wraps every autocommit statement in its own transaction, so schema
+        // creation cannot be wrapped in a manual BEGIN/COMMIT here. A concurrent first-open
+        // from another process is tolerated instead: "already exists" is accepted when the
+        // other process won the race and the schema is in place.
+        val current = userVersion(driver)
+        val target = ScpDatabase.Schema.version
+        when {
+            current == 0L && !hasProjectTable(driver) -> {
+                try {
                     ScpDatabase.Schema.create(driver)
-                    driver.execute(null, "PRAGMA user_version = $target", 0)
+                } catch (
+                    @Suppress("TooGenericExceptionCaught") t: Throwable,
+                ) {
+                    if (!hasProjectTable(driver)) throw t
                 }
-                current < target -> {
-                    ScpDatabase.Schema.migrate(driver, current, target)
-                    driver.execute(null, "PRAGMA user_version = $target", 0)
-                }
-                else -> Unit
+                driver.execute(null, "PRAGMA user_version = $target", 0)
             }
-            driver.execute(null, "COMMIT", 0)
-        } catch (t: Throwable) {
-            runCatching { driver.execute(null, "ROLLBACK", 0) }
-            throw t
+            current < target -> {
+                ScpDatabase.Schema.migrate(driver, current, target)
+                driver.execute(null, "PRAGMA user_version = $target", 0)
+            }
+            else -> Unit
         }
     }
 
     private fun userVersion(driver: SqlDriver): Long =
-        driver.executeQuery(
-            identifier = null,
-            sql = "PRAGMA user_version",
-            mapper = { cursor ->
-                QueryResult.Value(if (cursor.next().value) cursor.getLong(0) ?: 0L else 0L)
-            },
-            parameters = 0,
-        ).value
+        driver
+            .executeQuery(
+                identifier = null,
+                sql = "PRAGMA user_version",
+                mapper = { cursor ->
+                    QueryResult.Value(if (cursor.next().value) cursor.getLong(0) ?: 0L else 0L)
+                },
+                parameters = 0,
+            ).value
 
     private fun hasProjectTable(driver: SqlDriver): Boolean =
-        driver.executeQuery(
-            identifier = null,
-            sql = "SELECT count(*) FROM sqlite_master WHERE type = 'table' AND name = 'project'",
-            mapper = { cursor ->
-                QueryResult.Value(if (cursor.next().value) (cursor.getLong(0) ?: 0L) > 0 else false)
-            },
-            parameters = 0,
-        ).value
+        driver
+            .executeQuery(
+                identifier = null,
+                sql = "SELECT count(*) FROM sqlite_master WHERE type = 'table' AND name = 'project'",
+                mapper = { cursor ->
+                    QueryResult.Value(if (cursor.next().value) (cursor.getLong(0) ?: 0L) > 0 else false)
+                },
+                parameters = 0,
+            ).value
 
     private const val BUSY_TIMEOUT_MS: Int = 5_000
 }

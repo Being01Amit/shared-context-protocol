@@ -19,9 +19,14 @@ public object McpValidations {
     private const val MAX_NAME: Int = 200
     private const val MAX_TITLE: Int = 500
     private const val MAX_CONTENT: Int = 100_000
+    private const val MAX_PATH: Int = 1000
+    private const val MAX_QUERY: Int = 1000
     private const val MAX_TAGS: Int = 32
     private const val MAX_TAG_LENGTH: Int = 64
     private const val MAX_BATCH: Int = 200
+    private const val MIN_TOKEN_LIMIT: Int = 100
+    private const val MAX_SEARCH_LIMIT: Long = 500
+    private const val MAX_TIMELINE_LIMIT: Long = 10_000
 
     public val createProject: Validation<CreateProjectInput> =
         Validation {
@@ -49,10 +54,10 @@ public object McpValidations {
             }
             NewEntry::tags {
                 maxItems(MAX_TAGS)
-                onEach {
-                    minLength(1)
-                    maxLength(MAX_TAG_LENGTH)
-                }
+            }
+            NewEntry::tags onEach {
+                minLength(1)
+                maxLength(MAX_TAG_LENGTH)
             }
         }
 
@@ -74,40 +79,45 @@ public object McpValidations {
             }
             UpdateContextInput::entries {
                 maxItems(MAX_BATCH)
-                onEach { run(newEntry) }
+            }
+            UpdateContextInput::entries onEach {
+                run(newEntry)
             }
             UpdateContextInput::decisions {
                 maxItems(MAX_BATCH)
-                onEach {
-                    NewDecision::title {
-                        minLength(1)
-                        maxLength(MAX_TITLE)
-                    }
-                    NewDecision::decision {
-                        minLength(1)
-                        maxLength(MAX_CONTENT)
-                    }
+            }
+            UpdateContextInput::decisions onEach {
+                NewDecision::title {
+                    minLength(1)
+                    maxLength(MAX_TITLE)
+                }
+                NewDecision::decision {
+                    minLength(1)
+                    maxLength(MAX_CONTENT)
+                }
+                NewDecision::reason {
+                    maxLength(MAX_CONTENT)
                 }
             }
             UpdateContextInput::todos {
                 maxItems(MAX_BATCH)
-                onEach {
-                    NewTodo::description {
-                        minLength(1)
-                        maxLength(MAX_CONTENT)
-                    }
+            }
+            UpdateContextInput::todos onEach {
+                NewTodo::description {
+                    minLength(1)
+                    maxLength(MAX_CONTENT)
                 }
             }
             UpdateContextInput::files {
                 maxItems(MAX_BATCH)
-                onEach {
-                    FileUpdate::path {
-                        minLength(1)
-                        maxLength(1000)
-                    }
-                    FileUpdate::summary {
-                        maxLength(MAX_CONTENT)
-                    }
+            }
+            UpdateContextInput::files onEach {
+                FileUpdate::path {
+                    minLength(1)
+                    maxLength(MAX_PATH)
+                }
+                FileUpdate::summary {
+                    maxLength(MAX_CONTENT)
                 }
             }
         }
@@ -120,13 +130,13 @@ public object McpValidations {
             }
             HydrateContextInput::tags {
                 maxItems(MAX_TAGS)
-                onEach {
-                    minLength(1)
-                    maxLength(MAX_TAG_LENGTH)
-                }
+            }
+            HydrateContextInput::tags onEach {
+                minLength(1)
+                maxLength(MAX_TAG_LENGTH)
             }
             HydrateContextInput::tokenLimit ifPresent {
-                minimum(100)
+                minimum(MIN_TOKEN_LIMIT)
             }
         }
 
@@ -134,7 +144,7 @@ public object McpValidations {
         Validation {
             SearchContextInput::query {
                 minLength(1)
-                maxLength(1000)
+                maxLength(MAX_QUERY)
             }
             SearchContextInput::projectName ifPresent {
                 minLength(1)
@@ -146,7 +156,7 @@ public object McpValidations {
             }
             SearchContextInput::limit ifPresent {
                 minimum(1)
-                maximum(500)
+                maximum(MAX_SEARCH_LIMIT)
             }
         }
 
@@ -166,7 +176,7 @@ public object McpValidations {
             }
             TimelineInput::limit ifPresent {
                 minimum(1)
-                maximum(10_000)
+                maximum(MAX_TIMELINE_LIMIT)
             }
         }
 
@@ -193,10 +203,10 @@ public object McpValidations {
             }
             SaveNoteInput::tags {
                 maxItems(MAX_TAGS)
-                onEach {
-                    minLength(1)
-                    maxLength(MAX_TAG_LENGTH)
-                }
+            }
+            SaveNoteInput::tags onEach {
+                minLength(1)
+                maxLength(MAX_TAG_LENGTH)
             }
         }
 }

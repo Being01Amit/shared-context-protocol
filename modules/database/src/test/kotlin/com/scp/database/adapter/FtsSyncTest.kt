@@ -48,7 +48,12 @@ class FtsSyncTest {
     fun `insert is indexed via trigger`() {
         SqlContextEntryRepository(handle.database)
             .insert(Fixtures.entry(sessionId, title = "JWT refresh flow", content = "rotate tokens hourly"))
-        assertEquals(1, handle.database.contextEntryFtsQueries.countIndex().executeAsOne())
+        assertEquals(
+            1,
+            handle.database.contextEntryFtsQueries
+                .countIndex()
+                .executeAsOne(),
+        )
         assertEquals(1, search("jwt").size)
         assertEquals(1, search("rotate").size, "content is indexed, not just title")
     }
@@ -65,7 +70,12 @@ class FtsSyncTest {
 
         handle.driver.execute(null, "DELETE FROM context_entry WHERE id = '${entry.id}'", 0)
         assertTrue(search("omega").isEmpty())
-        assertEquals(0, handle.database.contextEntryFtsQueries.countIndex().executeAsOne())
+        assertEquals(
+            0,
+            handle.database.contextEntryFtsQueries
+                .countIndex()
+                .executeAsOne(),
+        )
     }
 
     @Test
@@ -110,8 +120,13 @@ class FtsSyncTest {
     @Test
     fun `rebuild repairs the index`() {
         SqlContextEntryRepository(handle.database).insert(Fixtures.entry(sessionId, title = "needle"))
-        handle.database.contextEntryFtsQueries.rebuild()
+        FtsAdmin.rebuild(handle.driver)
         assertEquals(1, search("needle").size)
-        assertEquals(1, handle.database.contextEntryFtsQueries.countIndex().executeAsOne())
+        assertEquals(
+            1,
+            handle.database.contextEntryFtsQueries
+                .countIndex()
+                .executeAsOne(),
+        )
     }
 }
