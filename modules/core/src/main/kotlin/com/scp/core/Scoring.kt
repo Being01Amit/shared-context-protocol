@@ -14,9 +14,12 @@ public object Scoring {
     private const val MILLIS_PER_HOUR = 3_600_000.0
     private const val HOURS_PER_DAY = 24.0
 
+    /** Stored priority is 1..5; the normalized span is (5 - 1) = 4. */
+    private const val PRIORITY_SPAN = 4
+
     public fun scoreEntry(item: RankableItem, query: HydrationQuery, weights: RankingWeights): Double {
         val recency = recencyDecay(item, query, weights)
-        val priorityNorm = (item.priority - 1).coerceIn(0, 4) / 4.0
+        val priorityNorm = (item.priority - 1).coerceIn(0, PRIORITY_SPAN) / PRIORITY_SPAN.toDouble()
         val tagJaccard = jaccard(item.tags, query.tags)
         val typeWeight = weights.multiplierFor(item.type).coerceIn(0.0, 1.0)
         return (weights.recency * recency) +

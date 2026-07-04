@@ -23,7 +23,7 @@ Every term is normalized to **[0, 1]** and the default weights sum to **1.0**, s
 
 Worked example (defaults, query tags `{auth, jwt}`): a 3-day-old `DECISION` entry, priority 4, tags `{auth, security}`:
 `recencyDecay = 2^(−72/168) ≈ 0.743`, `priorityNorm = 0.75`, `tagJaccard = 1/3 ≈ 0.333`, `typeWeight = 1.0`
-`score = 0.35·0.743 + 0.25·0.75 + 0.25·0.333 + 0.15·1.0 ≈ 0.62`
+`score = 0.35·0.743 + 0.25·0.75 + 0.25·0.333 + 0.15·1.0 ≈ 0.681` (asserted by `ScoringTest`)
 
 ### Mapping non-entry entities onto the same function
 

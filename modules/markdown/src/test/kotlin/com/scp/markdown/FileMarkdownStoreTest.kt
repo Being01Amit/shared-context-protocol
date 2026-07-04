@@ -101,9 +101,10 @@ class FileMarkdownStoreTest {
     @Test
     fun `empty sections render a none placeholder`() {
         val text =
-            Path.of(
-                store().write(SessionMarkdown(project = project, session = session, entries = emptyList())),
-            ).readText()
+            Path
+                .of(
+                    store().write(SessionMarkdown(project = project, session = session, entries = emptyList())),
+                ).readText()
         assertTrue("_(none)_" in text)
     }
 }

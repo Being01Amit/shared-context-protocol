@@ -38,7 +38,11 @@ class RedactionTest {
 
     @Test
     fun `jwt is redacted`() {
-        val out = redact("Authorization used eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIn0.dozjgNryP4J3jVmNHl0w5N_XgL0n3I9PlFUP0THsR8U")
+        val jwt =
+            "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9" +
+                ".eyJzdWIiOiIxMjM0NTY3ODkwIn0" +
+                ".dozjgNryP4J3jVmNHl0w5N_XgL0n3I9PlFUP0THsR8U"
+        val out = redact("Authorization used $jwt")
         assertTrue("[REDACTED:jwt]" in out)
         assertFalse("eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9" in out)
     }
