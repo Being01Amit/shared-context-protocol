@@ -1,9 +1,9 @@
 package com.scp.search
 
+import app.cash.sqldelight.db.SqlDriver
 import com.scp.database.ScpDatabase
 import com.scp.database.SearchEntries
 import com.scp.database.adapter.FtsAdmin
-import app.cash.sqldelight.db.SqlDriver
 import com.scp.model.ContextEntry
 import com.scp.model.port.SearchHit
 import com.scp.model.port.SearchIndex

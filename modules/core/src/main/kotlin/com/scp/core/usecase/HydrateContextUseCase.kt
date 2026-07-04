@@ -49,7 +49,11 @@ public class HydrateContextUseCase(
         val query =
             HydrationQuery(
                 projectId = project.id,
-                tags = input.tags.map { it.trim().lowercase() }.filter { it.isNotEmpty() }.toSet(),
+                tags =
+                    input.tags
+                        .map { it.trim().lowercase() }
+                        .filter { it.isNotEmpty() }
+                        .toSet(),
                 now = clock.now(),
             )
         val budget = Budget(input.tokenLimit ?: defaultTokenLimit, tokenEstimator)

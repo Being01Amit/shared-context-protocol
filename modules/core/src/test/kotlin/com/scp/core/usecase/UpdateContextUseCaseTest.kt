@@ -75,7 +75,7 @@ class UpdateContextUseCaseTest {
             ),
         decisions = listOf(NewDecision("db choice", "use sqlite", "local-first")),
         todos = listOf(NewTodo("write docs")),
-        files = listOf(FileUpdate("src/Auth.kt", "auth module, token=SECRET_TOKEN=abc123 style", "abc")),
+        files = listOf(FileUpdate("src/Auth.kt", "auth module config:\nSECRET_TOKEN=abc123", "abc")),
     )
 
     @Test

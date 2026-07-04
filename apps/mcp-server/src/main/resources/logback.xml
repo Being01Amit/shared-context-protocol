@@ -1,0 +1,27 @@
+<configuration>
+    <!-- stdout is the MCP stdio transport: NOTHING may ever log there.
+         Files + stderr only (ADR-13). -->
+    <appender name="FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <file>${SCP_LOG_DIR:-storage/logs}/scp.jsonl</file>
+        <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+            <fileNamePattern>${SCP_LOG_DIR:-storage/logs}/scp-%d{yyyy-MM-dd}.jsonl</fileNamePattern>
+            <maxHistory>30</maxHistory>
+        </rollingPolicy>
+        <encoder class="ch.qos.logback.classic.encoder.JsonEncoder"/>
+    </appender>
+
+    <appender name="STDERR" class="ch.qos.logback.core.ConsoleAppender">
+        <target>System.err</target>
+        <filter class="ch.qos.logback.classic.filter.ThresholdFilter">
+            <level>WARN</level>
+        </filter>
+        <encoder>
+            <pattern>%d{HH:mm:ss.SSS} %-5level %logger{24} - %msg%n</pattern>
+        </encoder>
+    </appender>
+
+    <root level="${SCP_LOG_LEVEL:-INFO}">
+        <appender-ref ref="FILE"/>
+        <appender-ref ref="STDERR"/>
+    </root>
+</configuration>

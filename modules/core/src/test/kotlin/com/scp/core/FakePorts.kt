@@ -110,7 +110,14 @@ class FakeContextEntryRepository(private val sessions: FakeSessionRepository) : 
     val store = mutableListOf<ContextEntry>()
 
     override fun insert(entry: ContextEntry) {
-        store += entry.copy(tags = entry.tags.map { it.trim().lowercase() }.filter { it.isNotEmpty() }.distinct())
+        store +=
+            entry.copy(
+                tags =
+                    entry.tags
+                        .map { it.trim().lowercase() }
+                        .filter { it.isNotEmpty() }
+                        .distinct(),
+            )
     }
 
     override fun findBySession(sessionId: String): List<ContextEntry> =
@@ -133,7 +140,11 @@ class FakeContextEntryRepository(private val sessions: FakeSessionRepository) : 
         byProject(projectId).groupingBy { it.type }.eachCount().mapValues { it.value.toLong() }
 
     private fun byProject(projectId: String): List<ContextEntry> {
-        val sessionIds = sessions.store.values.filter { it.projectId == projectId }.map { it.id }.toSet()
+        val sessionIds =
+            sessions.store.values
+                .filter { it.projectId == projectId }
+                .map { it.id }
+                .toSet()
         return store.filter { it.sessionId in sessionIds }
     }
 }

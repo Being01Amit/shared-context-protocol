@@ -54,54 +54,11 @@ public class UpdateContextUseCase(
                 val session = resolution.session
                 val now = clock.now()
 
-                val newDecisions =
-                    input.decisions.map { d ->
-                        Decision(
-                            id = ids.newId(),
-                            projectId = project.id,
-                            title = redact(d.title),
-                            decision = redact(d.decision),
-                            reason = redact(d.reason),
-                            createdAt = now,
-                            updatedAt = now,
-                        )
-                    }
-                val newTodos =
-                    input.todos.map { t ->
-                        Todo(
-                            id = ids.newId(),
-                            projectId = project.id,
-                            description = redact(t.description),
-                            owner = t.owner,
-                            createdAt = now,
-                        )
-                    }
-                val newFiles =
-                    input.files.map { f ->
-                        TrackedFile(
-                            id = ids.newId(),
-                            projectId = project.id,
-                            path = f.path,
-                            summary = redact(f.summary),
-                            hash = f.hash,
-                            updatedAt = now,
-                        )
-                    }
+                val newDecisions = input.decisions.map { it.toRedactedDecision(project.id, now) }
+                val newTodos = input.todos.map { it.toRedactedTodo(project.id, now) }
+                val newFiles = input.files.map { it.toRedactedFile(project.id, now) }
 
-                input.entries.forEach { e ->
-                    entries.insert(
-                        ContextEntry(
-                            id = ids.newId(),
-                            sessionId = session.id,
-                            timestamp = e.timestamp ?: now,
-                            title = redact(e.title),
-                            content = redact(e.content),
-                            type = e.type,
-                            tags = e.tags,
-                            priority = e.priority,
-                        ),
-                    )
-                }
+                input.entries.forEach { entries.insert(it.toRedactedEntry(session.id, now)) }
                 newDecisions.forEach(decisions::insert)
                 newTodos.forEach(todos::insert)
                 newFiles.forEach(files::upsert)
@@ -151,6 +108,48 @@ public class UpdateContextUseCase(
     }
 
     private fun redact(text: String): String = Redaction.redact(text, redactionPatterns)
+
+    private fun com.scp.model.mcp.NewEntry.toRedactedEntry(sessionId: String, now: kotlinx.datetime.Instant): ContextEntry =
+        ContextEntry(
+            id = ids.newId(),
+            sessionId = sessionId,
+            timestamp = timestamp ?: now,
+            title = redact(title),
+            content = redact(content),
+            type = type,
+            tags = tags,
+            priority = priority,
+        )
+
+    private fun com.scp.model.mcp.NewDecision.toRedactedDecision(projectId: String, now: kotlinx.datetime.Instant): Decision =
+        Decision(
+            id = ids.newId(),
+            projectId = projectId,
+            title = redact(title),
+            decision = redact(decision),
+            reason = redact(reason),
+            createdAt = now,
+            updatedAt = now,
+        )
+
+    private fun com.scp.model.mcp.NewTodo.toRedactedTodo(projectId: String, now: kotlinx.datetime.Instant): Todo =
+        Todo(
+            id = ids.newId(),
+            projectId = projectId,
+            description = redact(description),
+            owner = owner,
+            createdAt = now,
+        )
+
+    private fun com.scp.model.mcp.FileUpdate.toRedactedFile(projectId: String, now: kotlinx.datetime.Instant): TrackedFile =
+        TrackedFile(
+            id = ids.newId(),
+            projectId = projectId,
+            path = path,
+            summary = redact(summary),
+            hash = hash,
+            updatedAt = now,
+        )
 
     private data class TxOutcome(
         val session: Session,
