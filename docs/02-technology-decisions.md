@@ -34,7 +34,9 @@ Native-image would add a second build pipeline, reflection config for kotlinx.se
 
 **Consequences.** Hydration comfortably fits 1 s on any modern machine. A cold-start regression can only come from classpath bloat, so apps keep dependencies lean.
 
-**Revisit trigger.** A profiled hydration run (`scp hydrate --profile`, Phase 5) exceeding 800 ms end-to-end on a medium project. Then: GraalVM native-image for `apps/cli` and `apps/mcp-server` (ADR to be written at that point).
+**Revisit trigger.** A profiled hydration run exceeding 800 ms end-to-end on a medium project. Then: GraalVM native-image for `apps/cli` and `apps/mcp-server` (ADR to be written at that point).
+
+**Measured 2026-07-04 (Phase 5).** `Measure-Command { scp hydrate --project medium --tag m3 }` on the seeded medium fixture (50 sessions / 503 entries), Windows 11, Temurin 21, launched via the `installDist` `.bat` script: **884–950 ms** over three runs — *inside the 1 s budget* but past the 800 ms revisit threshold. Note the measurement includes `cmd.exe` + launcher script overhead on top of the JVM itself. Watch item, not an action item: if it regresses further, the cheap first step is AppCDS (`-XX:SharedArchiveFile`) before reaching for native-image. The MCP server path is unaffected — it is a long-lived process; cold-start applies once per session, not per tool call.
 
 ---
 

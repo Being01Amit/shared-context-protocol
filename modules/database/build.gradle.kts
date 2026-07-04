@@ -28,6 +28,11 @@ sqldelight {
         create("ScpDatabase") {
             packageName.set("com.scp.database")
             dialect(libs.sqldelight.dialect.sqlite338)
+            // Schema snapshot (.db file under src/main/sqldelight/databases): future .sqm
+            // migrations are verified against it in CI (ADR-5). Regenerate on schema
+            // change with :modules:database:generateMainScpDatabaseSchema.
+            schemaOutputDirectory.set(file("src/main/sqldelight/databases"))
+            verifyMigrations.set(true)
         }
     }
 }

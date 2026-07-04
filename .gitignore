@@ -5,6 +5,8 @@ storage/
 *.db
 *.db-wal
 *.db-shm
+# SQLDelight schema snapshot is source, not runtime data (ADR-5 migration verification)
+!modules/database/src/main/sqldelight/databases/*.db
 local.properties
 .idea/
 *.iml
