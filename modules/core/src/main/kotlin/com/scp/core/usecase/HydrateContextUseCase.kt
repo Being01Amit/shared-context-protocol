@@ -14,7 +14,9 @@ import com.scp.model.NotFoundException
 import com.scp.model.PriorityBrief
 import com.scp.model.RankableItem
 import com.scp.model.RankingWeights
+import com.scp.model.ResumePoint
 import com.scp.model.SessionBrief
+import com.scp.model.SessionStatus
 import com.scp.model.TodoBrief
 import com.scp.model.mcp.HydrateContextInput
 import com.scp.model.port.Clock
@@ -69,12 +71,31 @@ public class HydrateContextUseCase(
         val recentFiles = files.findRecentlyModified(project.id, FILE_COUNT).map { it.toBrief() }
         val priorities = currentPriorities(openDecisions, openTodos, openBugs)
 
+        // Every remaining type — ARCHITECTURE, FEATURE, TASK, LEARNING, REFACTOR, ... — which the
+        // type-specific fetches above never reach. Without this section an agent's own record of
+        // what it built is stored, indexed, and never returned on the resume path. BUG and PROMPT
+        // are excluded here only because they already have dedicated sections; the per-type
+        // multipliers in RankingWeights do the prioritizing across the rest.
+        val recentEntries =
+            rankBy(
+                entries
+                    .findRecent(project.id, CANDIDATE_LIMIT)
+                    .filterNot { it.type == ContextType.BUG || it.type == ContextType.PROMPT },
+                RankableItem::fromEntry,
+                query,
+            ).take(TOP_ENTRIES)
+
+        // Section 0: the resume anchor, charged to the budget FIRST so it can never be truncated
+        // away. An agent that reads nothing else still knows where the last one stopped.
+        val resumePoint = resumePoint(project.id, budget, recentFiles, openTodos)
+
         // Fixed section order (docs/05 §5). Section 1 is always emitted, hard-truncated if needed.
         val projectSummary = budget.takeOrTruncate(project.description.ifBlank { "(no project description recorded)" })
         val sessionsOut = budget.fill(recentSessions, ::renderSession)
         val decisionsOut = budget.fill(openDecisions.map { it.item.toBrief() }, ::renderDecision)
         val todosOut = budget.fill(openTodos.map { it.item.toBrief() }, ::renderTodo)
         val bugsOut = budget.fill(openBugs.map { it.item.toBrief() }, ::renderEntry)
+        val entriesOut = budget.fill(recentEntries.map { it.item.toBrief() }, ::renderEntry)
         val promptsOut = budget.fill(prompts.map { it.item.toBrief() }, ::renderEntry)
         val filesOut = budget.fill(recentFiles, ::renderFile)
         val prioritiesOut = budget.fill(priorities, ::renderPriority)
@@ -82,6 +103,7 @@ public class HydrateContextUseCase(
         return HydrationPayload(
             projectName = project.name,
             projectSummary = projectSummary,
+            resumePoint = resumePoint,
             recentSessions = sessionsOut,
             openDecisions = decisionsOut,
             openTodos = todosOut,
@@ -89,6 +111,7 @@ public class HydrateContextUseCase(
             relevantPrompts = promptsOut,
             recentFiles = filesOut,
             currentPriorities = prioritiesOut,
+            recentEntries = entriesOut,
             omittedCount = budget.omitted,
             truncationNotice =
                 budget.omitted.takeIf { it > 0 }?.let {
@@ -97,6 +120,38 @@ public class HydrateContextUseCase(
             estimatedTokens = budget.used,
         )
     }
+
+    /**
+     * Section 0. Charged for everything it emits — including [ResumePoint.filesInFlight] and
+     * [ResumePoint.blockingTodos], which also appear in their own sections later; leaving them
+     * uncharged let the payload exceed tokenLimit while estimatedTokens under-reported it.
+     */
+    private fun resumePoint(
+        projectId: String,
+        budget: Budget,
+        recentFiles: List<FileBrief>,
+        openTodos: List<Scored<com.scp.model.Todo>>,
+    ): ResumePoint? =
+        sessions.findLatest(projectId)?.let { latest ->
+            val filesInFlight = recentFiles.take(RESUME_FILES)
+            val blockingTodos = openTodos.take(RESUME_TODOS).map { it.item.toBrief() }
+            budget.charge(
+                latest.summary + " " + latest.nextStep +
+                    filesInFlight.joinToString(" ", transform = ::renderFile) +
+                    blockingTodos.joinToString(" ", transform = ::renderTodo),
+            )
+            ResumePoint(
+                lastSession = latest.toBrief(),
+                whatWasDone = latest.summary.ifBlank { "(no summary recorded for the last session)" },
+                whereWeStopped =
+                    latest.nextStep.ifBlank {
+                        "(no next step recorded — check open todos and recent entries below)"
+                    },
+                lastSessionWasOpen = latest.status == SessionStatus.OPEN,
+                filesInFlight = filesInFlight,
+                blockingTodos = blockingTodos,
+            )
+        }
 
     private data class Scored<T>(val item: T, val score: Double)
 
@@ -128,7 +183,6 @@ public class HydrateContextUseCase(
         fun <T> fill(candidates: List<T>, render: (T) -> String): List<T> {
             val emitted = mutableListOf<T>()
             candidates.forEachIndexed { index, candidate ->
-                if (emitted.size < index) return@forEachIndexed // already stopped; counted below
                 val cost = estimator.estimate(render(candidate))
                 if (cost <= remaining) {
                     emitted += candidate
@@ -140,6 +194,19 @@ public class HydrateContextUseCase(
                 }
             }
             return emitted
+        }
+
+        /**
+         * Unconditionally charge the budget for content that is emitted whatever the cost —
+         * the resume point (section 0). Never omits: a payload that dropped the resume anchor
+         * to save tokens would defeat the point of hydrating at all. `remaining` floors at 0 so
+         * an oversized resume point simply leaves nothing for the later sections rather than
+         * making the budget negative.
+         */
+        fun charge(text: String) {
+            val cost = estimator.estimate(text)
+            used += cost
+            remaining = (remaining - cost).coerceAtLeast(0)
         }
 
         /** Section 1 must always exist: hard-truncate rather than omit (docs/05 §4). */
@@ -178,7 +245,10 @@ public class HydrateContextUseCase(
         const val SESSION_COUNT = 5L
         const val CANDIDATE_LIMIT = 50L
         const val TOP_PROMPTS = 10
+        const val TOP_ENTRIES = 15
         const val FILE_COUNT = 10L
         const val PRIORITY_COUNT = 5
+        const val RESUME_FILES = 5
+        const val RESUME_TODOS = 3
     }
 }

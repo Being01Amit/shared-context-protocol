@@ -40,7 +40,12 @@ sqldelight {
 dependencies {
     api(project(":modules:model"))
     api(libs.sqldelight.runtime)
-    implementation(libs.sqldelight.sqlite.driver)
+    // Exclude the transitive xerial driver so only the encryption-capable willena fork
+    // (libs.sqlite.jdbc) provides the org.sqlite.* classes — otherwise two jars ship the
+    // same packages and class loading is non-deterministic.
+    implementation(libs.sqldelight.sqlite.driver) {
+        exclude(group = "org.xerial", module = "sqlite-jdbc")
+    }
     implementation(libs.sqlite.jdbc)
 
     testImplementation(kotlin("test"))

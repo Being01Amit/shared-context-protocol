@@ -2,6 +2,7 @@ package com.scp.cli
 
 import com.scp.config.ConfigLoader
 import com.scp.config.ScpConfig
+import com.scp.config.SecureFiles
 import com.scp.core.Redaction
 import com.scp.core.usecase.CreateProjectUseCase
 import com.scp.core.usecase.HydrateContextUseCase
@@ -21,8 +22,10 @@ import com.scp.database.adapter.SqlSessionRepository
 import com.scp.database.adapter.SqlTodoRepository
 import com.scp.database.adapter.SqliteTransactionRunner
 import com.scp.markdown.FileMarkdownStore
+import com.scp.markdown.NoOpMarkdownStore
 import com.scp.model.port.Clock
 import com.scp.model.port.IdGenerator
+import com.scp.model.port.MarkdownStore
 import com.scp.search.SqlSearchIndex
 import com.scp.skills.CreateProject
 import com.scp.skills.HydrateContext
@@ -57,8 +60,11 @@ internal class CliComponents private constructor(
     companion object {
         fun build(baseDir: Path): CliComponents {
             val config = ConfigLoader.load(baseDir.resolve("config.yaml"))
+            SecureFiles.prepareStorage(baseDir, config)
+            val dbKey = System.getenv("SCP_DB_KEY")?.takeIf { it.isNotBlank() }
             val dbPath = baseDir.resolve(config.databasePath)
-            val handle = DriverFactory.open(dbPath)
+            val handle = DriverFactory.open(dbPath, dbKey)
+            SecureFiles.restrict(dbPath)
             val db = handle.database
 
             val projects = SqlProjectRepository(db)
@@ -68,7 +74,9 @@ internal class CliComponents private constructor(
             val todos = SqlTodoRepository(db)
             val files = SqlFileRepository(db)
             val transactions = SqliteTransactionRunner(db, dbPath)
-            val markdown = FileMarkdownStore(baseDir.resolve(config.markdownPath))
+            // Encryption on -> no plaintext markdown mirror (it would leak what the DB encrypts).
+            val markdown: MarkdownStore =
+                if (dbKey != null) NoOpMarkdownStore() else FileMarkdownStore(baseDir.resolve(config.markdownPath))
             val searchIndex = SqlSearchIndex(db, handle.driver)
             val clock =
                 Clock {

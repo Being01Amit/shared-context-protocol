@@ -12,7 +12,11 @@ import kotlinx.serialization.Serializable
 @Serializable
 public data class ScpConfig(
     val databasePath: String = "storage/database/scp.db",
-    val markdownPath: String = "storage/markdown",
+    /**
+     * Root of the human-readable mirror, laid out `{project}/{timestamp}-{tool}-{id8}.md`
+     * plus a per-project `PROJECT.md` index and `LATEST.md` resume anchor.
+     */
+    val markdownPath: String = "storage/projects",
     val autoSaveIntervalSeconds: Int = 300,
     val hydrationTokenLimit: Int = 12_000,
     val hydrationRankingWeights: RankingWeights = RankingWeights(),

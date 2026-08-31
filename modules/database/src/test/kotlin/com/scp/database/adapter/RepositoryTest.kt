@@ -76,7 +76,7 @@ class RepositoryTest {
         sessions.insert(session)
 
         val end = Instant.parse("2026-07-01T12:00:00Z")
-        sessions.close(session.id, end, summary = null, tokenUsage = 1234)
+        sessions.close(session.id, end, summary = null, tokenUsage = 1234, nextStep = null)
 
         val closed = sessions.findById(session.id)!!
         assertEquals(SessionStatus.CLOSED, closed.status)

@@ -35,6 +35,11 @@ internal val json: Json =
         ignoreUnknownKeys = true
         encodeDefaults = true
         explicitNulls = false
+        // Callers are language models, which routinely send an explicit null for an optional
+        // argument they chose not to fill. Every optional field on the input DTOs is
+        // non-nullable-with-default, and explicitNulls only governs ENCODING, so without this
+        // a single "summary": null rejects the whole call at the boundary.
+        coerceInputValues = true
     }
 
 /**
@@ -43,6 +48,7 @@ internal val json: Json =
  * never a protocol-level crash.
  */
 private inline fun <reified I, reified R> callTool(
+    tool: String,
     arguments: JsonObject?,
     validation: Validation<I>,
     block: (I) -> R,
@@ -52,13 +58,18 @@ private inline fun <reified I, reified R> callTool(
         validation.checkValid(input)
         CallToolResult(content = listOf(TextContent(json.encodeToString(block(input)))))
     } catch (e: SerializationException) {
+        // Rejected before the skill layer, so SkillLogging never sees it. Without this line a
+        // malformed call leaves NO trace at all: no row, no markdown mirror, no log entry.
+        logger.warn { "tool=$tool outcome=rejected reason=deserialization error=${e.message}" }
         CallToolResult(content = listOf(TextContent("Invalid arguments: ${e.message}")), isError = true)
     } catch (e: ScpException) {
+        // Konform validation and domain guards both land here, also ahead of SkillLogging.
+        logger.warn { "tool=$tool outcome=rejected reason=invalid error=${e.message}" }
         CallToolResult(content = listOf(TextContent(e.message ?: "request failed")), isError = true)
     } catch (
         @Suppress("TooGenericExceptionCaught") e: Exception,
     ) {
-        logger.error(e) { "tool call failed unexpectedly" }
+        logger.error(e) { "tool=$tool outcome=error" }
         CallToolResult(content = listOf(TextContent("Internal error: ${e.message}")), isError = true)
     }
 
@@ -94,7 +105,15 @@ private fun entryItemSchema(): JsonObject =
             }
             arrayProp("tags", "Lowercase tags for later retrieval", stringItems())
             prop("priority", "integer", "1 (low) to 5 (critical), default 3")
-            prop("timestamp", "string", "ISO 8601 UTC; defaults to now")
+            putJsonObject("timestamp") {
+                put("type", "string")
+                put("format", "date-time")
+                put(
+                    "description",
+                    "ISO 8601 UTC, e.g. '2026-08-31T10:00:00Z'. Optional; defaults to now. " +
+                        "An unparseable value falls back to now rather than failing the call.",
+                )
+            }
         }
         put("required", JsonArray(listOf(JsonPrimitive("title"), JsonPrimitive("content"), JsonPrimitive("type"))))
     }
@@ -146,7 +165,7 @@ internal fun Server.registerScpTools(components: AppComponents) {
                 required = listOf("name"),
             ),
     ) { request ->
-        callTool<CreateProjectInput, _>(request.arguments, McpValidations.createProject) {
+        callTool<CreateProjectInput, _>("create_project", request.arguments, McpValidations.createProject) {
             components.createProject.execute(it)
         }
     }
@@ -163,7 +182,14 @@ internal fun Server.registerScpTools(components: AppComponents) {
                         prop("projectName", "string", "Target project")
                         prop("toolName", "string", "Calling tool identity, e.g. 'claude-code', 'antigravity'")
                         prop("sessionId", "string", "Explicit session UUID (optional; otherwise resolved automatically)")
-                        prop("summary", "string", "One-paragraph session summary")
+                        prop("summary", "string", "One-paragraph session summary: what changed this session")
+                        prop(
+                            "nextStep",
+                            "string",
+                            "Where the next agent should start. Returned first by hydrate_context, so " +
+                                "write it as a concrete instruction, e.g. 'implement PayPalAdapter.capture(), " +
+                                "mirror the idempotency handling in StripeAdapter'.",
+                        )
                         prop("keepOpen", "boolean", "Keep the session open after this update (default false)")
                         prop("tokenUsage", "integer", "Tokens consumed this session, if known")
                         arrayProp("entries", "Context entries captured this session", entryItemSchema())
@@ -174,7 +200,7 @@ internal fun Server.registerScpTools(components: AppComponents) {
                 required = listOf("projectName", "toolName"),
             ),
     ) { request ->
-        callTool<UpdateContextInput, _>(request.arguments, McpValidations.updateContext) {
+        callTool<UpdateContextInput, _>("update_context", request.arguments, McpValidations.updateContext) {
             components.updateContext.execute(it)
         }
     }
@@ -182,8 +208,10 @@ internal fun Server.registerScpTools(components: AppComponents) {
     addTool(
         name = "hydrate_context",
         description =
-            "Resume a project: returns a ranked, token-budgeted payload (summary, recent sessions, open " +
-                "decisions/todos/bugs, relevant prompts, recent files, priorities). Truncation is always signaled.",
+            "Resume a project. Returns resumePoint FIRST — what the last agent did and where it stopped — " +
+                "then a ranked, token-budgeted payload (summary, recent sessions, open decisions/todos/bugs, " +
+                "recent entries, prompts, files, priorities). Start from resumePoint.whereWeStopped rather " +
+                "than asking the user what was done. Truncation is always signaled.",
         inputSchema =
             ToolSchema(
                 properties =
@@ -195,7 +223,7 @@ internal fun Server.registerScpTools(components: AppComponents) {
                 required = listOf("projectName"),
             ),
     ) { request ->
-        callTool<HydrateContextInput, _>(request.arguments, McpValidations.hydrateContext) {
+        callTool<HydrateContextInput, _>("hydrate_context", request.arguments, McpValidations.hydrateContext) {
             components.hydrateContext.execute(it)
         }
     }
@@ -222,7 +250,7 @@ internal fun Server.registerScpTools(components: AppComponents) {
                 required = listOf("query"),
             ),
     ) { request ->
-        callTool<SearchContextInput, _>(request.arguments, McpValidations.searchContext) {
+        callTool<SearchContextInput, _>("search_context", request.arguments, McpValidations.searchContext) {
             components.searchContext.execute(it)
         }
     }
@@ -236,7 +264,7 @@ internal fun Server.registerScpTools(components: AppComponents) {
                 required = listOf("projectName"),
             ),
     ) { request ->
-        callTool<ProjectSummaryInput, _>(request.arguments, McpValidations.projectSummary) {
+        callTool<ProjectSummaryInput, _>("project_summary", request.arguments, McpValidations.projectSummary) {
             components.summarizeContext.execute(it)
         }
     }
@@ -254,7 +282,7 @@ internal fun Server.registerScpTools(components: AppComponents) {
                 required = listOf("projectName"),
             ),
     ) { request ->
-        callTool<TimelineInput, _>(request.arguments, McpValidations.timeline) {
+        callTool<TimelineInput, _>("timeline", request.arguments, McpValidations.timeline) {
             components.timeline.execute(it)
         }
     }
@@ -269,6 +297,7 @@ internal fun Server.registerScpTools(components: AppComponents) {
         } catch (
             @Suppress("TooGenericExceptionCaught") e: Exception,
         ) {
+            logger.error(e) { "tool=list_projects outcome=error" }
             CallToolResult(content = listOf(TextContent("Internal error: ${e.message}")), isError = true)
         }
     }
@@ -295,7 +324,7 @@ internal fun Server.registerScpTools(components: AppComponents) {
                 required = listOf("projectName", "toolName", "title", "content"),
             ),
     ) { request ->
-        callTool<SaveNoteInput, _>(request.arguments, McpValidations.saveNote) {
+        callTool<SaveNoteInput, _>("save_note", request.arguments, McpValidations.saveNote) {
             components.saveNote.execute(it)
         }
     }

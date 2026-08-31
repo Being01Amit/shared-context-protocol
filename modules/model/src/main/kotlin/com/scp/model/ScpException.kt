@@ -8,3 +8,6 @@ public class NotFoundException(message: String) : ScpException(message)
 
 /** Input rejected at the boundary (Konform validation or domain guard). */
 public class InvalidInputException(message: String) : ScpException(message)
+
+/** The storage layer could not be opened — e.g. a wrong/missing encryption key. */
+public class StorageException(message: String, cause: Throwable? = null) : ScpException(message, cause)

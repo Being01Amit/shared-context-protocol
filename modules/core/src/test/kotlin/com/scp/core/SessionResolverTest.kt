@@ -68,7 +68,7 @@ class SessionResolverTest {
     @Test
     fun `explicit session id wins even when closed`() {
         val s = openSession("claude-code")
-        sessions.close(s.id, Instant.parse("2026-07-04T11:00:00Z"), null, null)
+        sessions.close(s.id, Instant.parse("2026-07-04T11:00:00Z"), null, null, null)
         val resolution = resolver.resolve(projectId, "antigravity", s.id)
         assertFalse(resolution.created)
         assertEquals(s.id, resolution.session.id)

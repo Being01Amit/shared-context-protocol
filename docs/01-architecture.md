@@ -25,7 +25,7 @@ flowchart LR
 
     subgraph storage["Local storage"]
         SQLITE[("storage/database/scp.db<br/>SQLite, WAL")]
-        MDFILES["storage/markdown/{project}/*.md"]
+        MDFILES["storage/projects/{project}/<br/>{ts}-{tool}-{id8}.md + PROJECT.md + LATEST.md"]
         LOGS["storage/logs/*.jsonl"]
     end
 
@@ -134,10 +134,12 @@ scp/
                                    # SummarizeContext.kt, Timeline.kt — thin orchestration only
     api/                           # optional Ktor local HTTP surface (not built in v1)
   storage/                         # runtime data (gitignored), created on `scp init`
-    projects/
-    markdown/{project}/
+    projects/{project}/            # the markdown mirror: project-first, then date-first
+      PROJECT.md                   #   index — resume point + every session, newest first
+      LATEST.md                    #   copy of the newest session (the resume anchor)
+      {YYYY-MM-DD}T{HH-mm-ss}Z-{tool}-{id8}.md
     database/scp.db
-    logs/scp-YYYY-MM-DD.jsonl
+    logs/scp-YYYY-MM-DD.jsonl      # always under this baseDir, never the working directory
   docs/
   config.yaml
 ```

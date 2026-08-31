@@ -77,6 +77,9 @@ public object McpValidations {
             UpdateContextInput::summary {
                 maxLength(MAX_CONTENT)
             }
+            UpdateContextInput::nextStep {
+                maxLength(MAX_CONTENT)
+            }
             UpdateContextInput::entries {
                 maxItems(MAX_BATCH)
             }

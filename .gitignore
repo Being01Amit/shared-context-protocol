@@ -5,6 +5,9 @@ storage/
 *.db
 *.db-wal
 *.db-shm
+# Rollback-journal sidecar: WAL mode does not produce one today, ignored defensively in
+# case journaling mode ever changes so a runtime journal can never be committed.
+*.db-journal
 # SQLDelight schema snapshot is source, not runtime data (ADR-5 migration verification)
 !modules/database/src/main/sqldelight/databases/*.db
 local.properties

@@ -1,0 +1,21 @@
+-- Migration 2 -> 3: make session start time sortable.
+--
+-- start_time is ISO-8601 TEXT and kotlinx's Instant.toString() trims trailing zero groups
+-- from the fraction, so stored values are 0, 3, 6 or 9 digits wide. TEXT comparison across
+-- those widths is not chronological: 'Z' (0x5A) outranks '.' (0x2E) and every digit, so
+-- '...T12:44:34.732Z' sorts after the later '...T12:44:34.732767700Z'. hydrate_context's
+-- resume anchor (findLatest) reads the top row of that ordering, so the next agent can be
+-- pointed at an older session. This database already holds both 6- and 9-digit values.
+--
+-- The new column is written from the exact Instant on insert. Existing rows are backfilled
+-- at whole-second precision: SQLite's date functions only accept up to 3 fractional digits,
+-- so the fraction is dropped rather than mis-parsed. That is lossless for ordering ACROSS
+-- seconds, and within a single second the relative order of pre-existing rows was never
+-- recoverable from the broken TEXT sort anyway.
+ALTER TABLE session ADD COLUMN start_time_epoch_nanos INTEGER NOT NULL DEFAULT 0;
+
+UPDATE session
+SET start_time_epoch_nanos =
+    COALESCE(CAST(strftime('%s', substr(start_time, 1, 19) || 'Z') AS INTEGER), 0) * 1000000000;
+
+CREATE INDEX idx_session_start_nanos ON session(project_id, start_time_epoch_nanos);

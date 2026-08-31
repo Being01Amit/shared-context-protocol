@@ -67,6 +67,8 @@ public class SqlSessionRepository(private val db: ScpDatabase) : SessionReposito
             summary = session.summary,
             tokenUsage = session.tokenUsage,
             status = session.status.dbValue,
+            nextStep = session.nextStep,
+            startTimeEpochNanos = session.startTime.toEpochNanos(),
         )
     }
 
@@ -82,11 +84,18 @@ public class SqlSessionRepository(private val db: ScpDatabase) : SessionReposito
             .executeAsList()
             .map { it.toDomain() }
 
-    override fun close(id: String, endTime: Instant, summary: String?, tokenUsage: Long?) {
+    override fun findLatest(projectId: String): Session? =
+        db.sessionQueries
+            .findLatest(projectId)
+            .executeAsOneOrNull()
+            ?.toDomain()
+
+    override fun close(id: String, endTime: Instant, summary: String?, tokenUsage: Long?, nextStep: String?) {
         db.sessionQueries.closeSession(
             endTime = endTime.toString(),
             summary = summary,
             tokenUsage = tokenUsage,
+            nextStep = nextStep,
             id = id,
         )
     }
@@ -242,3 +251,13 @@ public class SqlFileRepository(private val db: ScpDatabase) : FileRepository {
             .executeAsList()
             .map { it.toDomain() }
 }
+
+/**
+ * The sortable form of an instant: whole nanoseconds since the epoch. Written alongside the
+ * ISO-8601 `start_time` text because that text is not chronologically sortable — see the
+ * comment on `session.start_time_epoch_nanos` in Session.sq. Stays well inside Long range
+ * (year 2262 is ~9.2e18 ns).
+ */
+public fun Instant.toEpochNanos(): Long = epochSeconds * NANOS_PER_SECOND + nanosecondsOfSecond
+
+private const val NANOS_PER_SECOND: Long = 1_000_000_000L

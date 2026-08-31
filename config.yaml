@@ -1,7 +1,7 @@
 # SCP configuration. All keys are optional; the values shown are the defaults.
 # Invalid values fail startup with a message naming the offending key (ADR-11).
 databasePath: storage/database/scp.db
-markdownPath: storage/markdown
+markdownPath: storage/projects   # {project}/{ts}-{tool}-{id8}.md + PROJECT.md + LATEST.md
 autoSaveIntervalSeconds: 300
 hydrationTokenLimit: 12000
 hydrationRankingWeights:
