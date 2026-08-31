@@ -39,12 +39,63 @@ class FileMarkdownStoreTest {
         )
 
     @Test
-    fun `writes to project dir with date and 8-char session suffix`() {
+    fun `writes project-first then timestamp-first, with tool and session suffix`() {
         val path = store().write(sessionMarkdown())
         val file = Path.of(path)
-        assertEquals("2026-07-04-abcdef12.md", file.name)
-        assertTrue(file.parent.name == "demo")
+        assertEquals("2026-07-04T09-30-00Z-claude-code-abcdef12.md", file.name)
+        assertEquals("demo", file.parent.name)
         assertTrue(Files.exists(file))
+    }
+
+    @Test
+    fun `session file names sort chronologically as plain text`() {
+        val early = session.copy(id = "11111111-0000-4000-8000-000000000000", startTime = Instant.parse("2026-07-04T09:00:00Z"))
+        val late = session.copy(id = "22222222-0000-4000-8000-000000000000", startTime = Instant.parse("2026-12-31T23:59:59Z"))
+        val earlyName = Path.of(store().write(sessionMarkdown().copy(session = early))).name
+        val lateName = Path.of(store().write(sessionMarkdown().copy(session = late))).name
+        assertTrue(earlyName < lateName, "'$earlyName' must sort before '$lateName'")
+    }
+
+    @Test
+    fun `LATEST and PROJECT index are written alongside the session file`() {
+        val dir = Path.of(store().write(sessionMarkdown())).parent
+        val latest = dir.resolve("LATEST.md")
+        val index = dir.resolve("PROJECT.md")
+        assertTrue(Files.exists(latest), "LATEST.md is the resume anchor")
+        assertTrue(Files.exists(index), "PROJECT.md is the project index")
+        assertTrue("built auth" in latest.readText())
+        assertTrue("# demo" in index.readText())
+        assertTrue("## Resume here" in index.readText())
+    }
+
+    @Test
+    fun `LATEST tracks the newest session and the index lists newest first`() {
+        val older = session.copy(id = "11111111-0000-4000-8000-000000000000", summary = "older work")
+        val newer =
+            session.copy(
+                id = "22222222-0000-4000-8000-000000000000",
+                startTime = Instant.parse("2026-08-01T10:00:00Z"),
+                summary = "newer work",
+                nextStep = "carry on from the adapter split",
+            )
+        store().write(sessionMarkdown().copy(session = older))
+        val dir = Path.of(store().write(sessionMarkdown().copy(session = newer))).parent
+
+        assertTrue("newer work" in dir.resolve("LATEST.md").readText(), "LATEST must follow the newest write")
+        val index = dir.resolve("PROJECT.md").readText()
+        assertTrue("carry on from the adapter split" in index, "index must surface the resume point")
+        assertTrue(
+            index.indexOf("2026-08-01T10-00-00Z") < index.indexOf("2026-07-04T09-30-00Z"),
+            "sessions must be listed newest first",
+        )
+    }
+
+    @Test
+    fun `index and latest are excluded from the session listing`() {
+        val dir = Path.of(store().write(sessionMarkdown())).parent
+        val index = dir.resolve("PROJECT.md").readText()
+        assertTrue("- [LATEST.md]" !in index, "LATEST.md is not a session")
+        assertTrue("- [PROJECT.md]" !in index, "the index does not list itself")
     }
 
     @Test
@@ -88,7 +139,8 @@ class FileMarkdownStoreTest {
         val second = store().write(sessionMarkdown(listOf(ContextEntry("e9", session.id, t0, "new note", "body", ContextType.LEARNING))))
         assertEquals(first, second)
         assertTrue("new note" in Path.of(second).readText())
-        assertEquals(1, Files.list(Path.of(first).parent).use { it.count() }, "no temp files left behind")
+        // Exactly the session file + LATEST.md + PROJECT.md — no temp files left behind.
+        assertEquals(3, Files.list(Path.of(first).parent).use { it.count() }, "no temp files left behind")
     }
 
     @Test

@@ -23,6 +23,11 @@ public data class NewEntry(
     val type: ContextType,
     val tags: List<String> = emptyList(),
     val priority: Int = ContextEntry.DEFAULT_PRIORITY,
+    /**
+     * Optional; defaults to the update time. Parsed leniently (see [LenientInstantSerializer])
+     * because a timestamp a model formatted its own way must not discard the whole call.
+     */
+    @Serializable(with = LenientInstantSerializer::class)
     val timestamp: Instant? = null,
 )
 
@@ -52,6 +57,8 @@ public data class UpdateContextInput(
     val toolName: String,
     val sessionId: String? = null,
     val summary: String = "",
+    /** Where the next agent should start. Surfaced first by hydrate_context. */
+    val nextStep: String = "",
     val keepOpen: Boolean = false,
     val tokenUsage: Long? = null,
     val entries: List<NewEntry> = emptyList(),

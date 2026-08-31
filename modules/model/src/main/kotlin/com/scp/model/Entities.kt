@@ -19,6 +19,10 @@ public data class Project(
     val updatedAt: Instant,
 )
 
+/**
+ * A work period by one tool. [summary] records what happened; [nextStep] records where the
+ * next agent should start — the two answer different questions and hydration surfaces both.
+ */
 @Serializable
 public data class Session(
     val id: String,
@@ -29,6 +33,7 @@ public data class Session(
     val summary: String = "",
     val tokenUsage: Long? = null,
     val status: SessionStatus = SessionStatus.OPEN,
+    val nextStep: String = "",
 )
 
 @Serializable

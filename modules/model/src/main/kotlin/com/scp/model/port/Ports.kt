@@ -38,7 +38,14 @@ public interface SessionRepository {
     /** All sessions with status = open for the project — session resolution's hot query. */
     public fun findOpenByProject(projectId: String): List<Session>
 
-    public fun close(id: String, endTime: Instant, summary: String?, tokenUsage: Long?)
+    /**
+     * The most recently *started* session, open or closed — hydration's resume anchor.
+     * Open sessions are included deliberately: a crashed agent's session is still where
+     * work stopped.
+     */
+    public fun findLatest(projectId: String): Session?
+
+    public fun close(id: String, endTime: Instant, summary: String?, tokenUsage: Long?, nextStep: String?)
 
     /** Most recent first. */
     public fun listRecent(projectId: String, limit: Long): List<Session>

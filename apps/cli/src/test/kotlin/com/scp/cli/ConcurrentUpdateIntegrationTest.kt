@@ -104,10 +104,17 @@ class ConcurrentUpdateIntegrationTest {
             assertEquals(10, entryCount, "all 10 entries persisted, no data loss")
             assertEquals(10, verifier.searchIndex.indexedEntryCount(), "FTS index consistent with entries")
 
-            // Both markdown mirrors exist.
-            val markdownFiles =
-                Files.list(tmp.resolve("storage/markdown/shared")).use { it.count() }
-            assertEquals(2, markdownFiles, "one markdown mirror per session")
+            // Both markdown mirrors exist, project-first under storage/projects, plus the
+            // LATEST.md resume anchor and the PROJECT.md index (shared by both writers).
+            val projectDir = tmp.resolve("storage/projects/shared")
+            val names = Files.list(projectDir).use { s -> s.map { it.fileName.toString() }.toList() }
+            assertEquals(
+                2,
+                names.count { it != "LATEST.md" && it != "PROJECT.md" },
+                "one markdown mirror per session",
+            )
+            assertTrue("LATEST.md" in names, "resume anchor must exist")
+            assertTrue("PROJECT.md" in names, "project index must exist")
         }
     }
 

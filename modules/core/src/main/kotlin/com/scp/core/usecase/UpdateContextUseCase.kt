@@ -22,6 +22,9 @@ import com.scp.model.port.SessionMarkdown
 import com.scp.model.port.SessionRepository
 import com.scp.model.port.TodoRepository
 import com.scp.model.port.TransactionRunner
+import io.github.oshai.kotlinlogging.KotlinLogging
+
+private val logger = KotlinLogging.logger("com.scp.core.usecase.UpdateContextUseCase")
 
 /**
  * The write path (docs/01 §5): resolve session -> redact -> persist atomically ->
@@ -66,7 +69,8 @@ public class UpdateContextUseCase(
                 val close = !input.keepOpen
                 if (close) {
                     val summary = input.summary.takeIf { it.isNotBlank() }?.let(::redact)
-                    sessions.close(session.id, now, summary, input.tokenUsage)
+                    val nextStep = input.nextStep.takeIf { it.isNotBlank() }?.let(::redact)
+                    sessions.close(session.id, now, summary, input.tokenUsage, nextStep)
                 }
                 projects.touch(project.id, now)
 
@@ -83,17 +87,32 @@ public class UpdateContextUseCase(
 
         // File I/O happens outside the write transaction — never hold the DB write lock
         // for markdown generation.
+        //
+        // The transaction has already COMMITTED by this point, so a mirror failure must not be
+        // reported as a failed update: the caller would conclude nothing was saved and retry,
+        // and because the session was just closed the retry opens a new one and re-inserts every
+        // entry. The mirror is a convenience view; the database is the source of truth. An empty
+        // path is the same "no mirror produced" signal NoOpMarkdownStore returns.
         val markdownPath =
-            markdown.write(
-                SessionMarkdown(
-                    project = project,
-                    session = outcome.session,
-                    entries = outcome.sessionEntries,
-                    decisions = outcome.newDecisions,
-                    todos = outcome.newTodos,
-                    files = outcome.newFiles,
-                ),
-            )
+            try {
+                markdown.write(
+                    SessionMarkdown(
+                        project = project,
+                        session = outcome.session,
+                        entries = outcome.sessionEntries,
+                        decisions = outcome.newDecisions,
+                        todos = outcome.newTodos,
+                        files = outcome.newFiles,
+                    ),
+                )
+            } catch (
+                @Suppress("TooGenericExceptionCaught") e: Exception,
+            ) {
+                logger.warn(e) {
+                    "markdown mirror failed for session ${outcome.session.id} — context IS persisted in the database"
+                }
+                ""
+            }
 
         return UpdateContextResult(
             sessionId = outcome.session.id,

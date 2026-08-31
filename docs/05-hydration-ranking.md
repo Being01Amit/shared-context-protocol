@@ -86,14 +86,22 @@ Truncation is **always signaled, never silent**. The project summary (section 1)
 
 ## 5. Hydration payload order
 
+0. **Resume point** — the most recently *started* session (open or closed): what was done
+   (`session.summary`), where work stopped (`session.next_step`), files in flight, blocking todos.
+   Charged to the budget **first** and never omitted: an agent that reads nothing else still knows
+   where to continue. Absent only when the project has no sessions.
 1. Project summary
 2. Last 5 sessions (most recent first; fewer if budget-constrained)
 3. Open architecture decisions (`decision.status = 'open'`, score-ordered)
 4. Open TODOs (`todo.status IN ('open','in_progress')`, score-ordered)
 5. Pending/unresolved bugs (`context_entry.type = 'BUG'` in open work, score-ordered)
-6. Top-N relevant prompts (`type = 'PROMPT'`, score-ordered against query tags)
-7. Recently modified files (`file` ordered by `updated_at` desc)
-8. Current priorities (highest-scoring open items across 3–5)
+6. **Recent entries of every other type** — `ARCHITECTURE`, `FEATURE`, `TASK`, `LEARNING`,
+   `REFACTOR`, `SECURITY`, … score-ordered, with `BUG`/`PROMPT` excluded because they have their own
+   sections. Without this section an agent's own record of what it built is stored, indexed, and
+   never returned on the resume path.
+7. Top-N relevant prompts (`type = 'PROMPT'`, score-ordered against query tags)
+8. Recently modified files (`file` ordered by `updated_at` desc)
+9. Current priorities (highest-scoring open items across 3–5)
 
 ```mermaid
 sequenceDiagram

@@ -44,14 +44,26 @@ CREATE TABLE session (
     end_time    TEXT,                                -- NULL while open
     summary     TEXT NOT NULL DEFAULT '',
     token_usage INTEGER,                             -- NULL if the tool doesn't report it
-    status      TEXT NOT NULL DEFAULT 'open' CHECK (status IN ('open', 'closed'))
+    status      TEXT NOT NULL DEFAULT 'open' CHECK (status IN ('open', 'closed')),
+    next_step   TEXT NOT NULL DEFAULT '',            -- where the NEXT agent starts (v2, 1.sqm)
+    start_time_epoch_nanos INTEGER NOT NULL DEFAULT 0 -- sortable start_time (v3, 2.sqm)
 );
 
 CREATE INDEX idx_session_project_status ON session(project_id, status);
 CREATE INDEX idx_session_start_time     ON session(start_time);
+CREATE INDEX idx_session_start_nanos    ON session(project_id, start_time_epoch_nanos);
 ```
 
 `(project_id, status)` is the hot index: session resolution's `WHERE project_id = ? AND status = 'open'` and doctor's stale-session scan both hit it.
+
+**Why two start-time columns.** `start_time` is the human-readable ISO-8601 form; `start_time_epoch_nanos`
+is the one every `ORDER BY` and range filter uses. They are not interchangeable: `Instant.toString()`
+trims trailing zero groups from the fraction, so stored values are 0, 3, 6 or 9 digits wide, and TEXT
+comparison across those widths is not chronological — `Z` (0x5A) outranks `.` (0x2E) and every digit,
+so `2026-08-31T12:44:34.732Z` sorts *after* the later `2026-08-31T12:44:34.732767700Z`, and a
+whole-second timestamp sorts after every fractional one in its second. Ordering `findLatest` that way
+hands the next agent an older session as its resume anchor. The 2.sqm backfill is whole-second only
+(SQLite's date functions accept at most 3 fractional digits); rows written since are exact.
 
 ### ContextEntry.sq
 

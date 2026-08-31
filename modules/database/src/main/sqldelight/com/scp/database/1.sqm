@@ -1,0 +1,10 @@
+-- Migration 1 -> 2: the resume anchor.
+--
+-- session.next_step records where the NEXT agent should start, as opposed to summary,
+-- which records what happened. hydrate_context returns it in the resumePoint section
+-- ahead of every other section so the token budget can never truncate it.
+--
+-- NOT NULL DEFAULT '' rather than a nullable column: every read path treats "no recorded
+-- next step" and "empty next step" identically, so a null would add a case that carries
+-- no information. Existing rows backfill to '' automatically.
+ALTER TABLE session ADD COLUMN next_step TEXT NOT NULL DEFAULT '';

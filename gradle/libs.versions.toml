@@ -24,7 +24,9 @@ kotlinx-coroutines-core = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-c
 sqldelight-sqlite-driver = { module = "app.cash.sqldelight:sqlite-driver", version.ref = "sqldelight" }
 sqldelight-runtime = { module = "app.cash.sqldelight:runtime", version.ref = "sqldelight" }
 sqldelight-dialect-sqlite338 = { module = "app.cash.sqldelight:sqlite-3-38-dialect", version.ref = "sqldelight" }
-sqlite-jdbc = { module = "org.xerial:sqlite-jdbc", version.ref = "sqlite-jdbc" }
+# Encryption-capable drop-in fork of org.xerial:sqlite-jdbc (SQLite3MultipleCiphers /
+# SQLCipher). Same version line as xerial; adds transparent at-rest DB encryption.
+sqlite-jdbc = { module = "io.github.willena:sqlite-jdbc", version.ref = "sqlite-jdbc" }
 mcp-sdk-server = { module = "io.modelcontextprotocol:kotlin-sdk-server", version.ref = "mcp-sdk" }
 kaml = { module = "com.charleskorn.kaml:kaml", version.ref = "kaml" }
 konform = { module = "io.konform:konform", version.ref = "konform" }

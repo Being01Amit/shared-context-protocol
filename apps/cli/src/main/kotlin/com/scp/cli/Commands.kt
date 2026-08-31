@@ -10,6 +10,7 @@ import com.github.ajalt.clikt.parameters.options.option
 import com.github.ajalt.clikt.parameters.options.required
 import com.github.ajalt.clikt.parameters.types.int
 import com.github.ajalt.clikt.parameters.types.long
+import com.scp.config.SecureFiles
 import com.scp.model.ContextType
 import com.scp.model.ScpException
 import com.scp.model.mcp.CreateProjectInput
@@ -29,9 +30,17 @@ internal val cliJson: Json =
         encodeDefaults = true
         explicitNulls = false
         ignoreUnknownKeys = true
+        // --json reads a hand- or agent-written UpdateContextInput through the same DTOs the MCP
+        // boundary uses, so it needs the same tolerance: an explicit null for an optional field
+        // must fall back to the default instead of rejecting the whole payload.
+        coerceInputValues = true
     }
 
-internal fun baseDir(): Path = Path.of(System.getProperty("scp.home") ?: System.getProperty("user.dir"))
+internal fun baseDir(): Path =
+    Path
+        .of(System.getProperty("scp.home") ?: System.getProperty("user.dir"))
+        .toAbsolutePath()
+        .normalize()
 
 /** Shared behavior: open components, run, translate domain errors to clean CLI errors. */
 internal abstract class ScpCommand(name: String) : CliktCommand(name = name) {
@@ -51,17 +60,27 @@ internal abstract class ScpCommand(name: String) : CliktCommand(name = name) {
 internal class InitCommand : CliktCommand(name = "init") {
     override fun run() {
         val base = baseDir()
-        listOf("storage/projects", "storage/markdown", "storage/database", "storage/logs").forEach {
-            Files.createDirectories(base.resolve(it))
+        SecureFiles.secureDirectory(base.resolve("storage"))
+        // storage/projects IS the markdown root (config.markdownPath); there is no separate
+        // storage/markdown. SecureFiles.prepareStorage creates the configured paths on every
+        // start, so this list only covers what must exist before a config is even loaded.
+        listOf("storage/projects", "storage/database", "storage/logs").forEach {
+            SecureFiles.secureDirectory(base.resolve(it))
         }
         val configFile = base.resolve("config.yaml")
         if (!Files.exists(configFile)) {
             Files.writeString(configFile, DEFAULT_CONFIG_YAML)
             echo("Wrote default config.yaml")
         }
-        // Opening the database applies PRAGMAs and creates the schema.
-        CliComponents.build(base).use { components ->
-            echo("Database ready at ${components.dbPath}")
+        // Opening the database applies PRAGMAs and creates the schema (encrypted when SCP_DB_KEY is set).
+        try {
+            CliComponents.build(base).use { components ->
+                echo("Database ready at ${components.dbPath}")
+            }
+        } catch (e: ScpException) {
+            throw CliktError(e.message ?: "initialization failed", cause = e)
+        } catch (e: com.scp.config.ConfigException) {
+            throw CliktError(e.message ?: "invalid configuration", cause = e)
         }
         echo("SCP initialized under $base")
     }
@@ -97,7 +116,8 @@ internal class ListProjectsCommand : ScpCommand("list-projects") {
 internal class UpdateCommand : ScpCommand("update") {
     private val project by option("--project", help = "Project name").required()
     private val tool by option("--tool", help = "Tool identity").default("cli")
-    private val summary by option("--summary", help = "Session summary").default("")
+    private val summary by option("--summary", help = "Session summary: what changed").default("")
+    private val nextStep by option("--next-step", help = "Where the next agent should start").default("")
     private val keepOpen by option("--keep-open", help = "Do not close the session").flag()
     private val sessionId by option("--session-id", help = "Explicit session UUID")
     private val jsonFile by option("--json", help = "Path to a full UpdateContextInput JSON payload")
@@ -112,6 +132,7 @@ internal class UpdateCommand : ScpCommand("update") {
                     toolName = tool,
                     sessionId = sessionId,
                     summary = summary,
+                    nextStep = nextStep,
                     keepOpen = keepOpen,
                 )
             }
@@ -195,7 +216,7 @@ private val DEFAULT_CONFIG_YAML: String =
     """
     # SCP configuration. All keys optional; shown values are the defaults.
     databasePath: storage/database/scp.db
-    markdownPath: storage/markdown
+    markdownPath: storage/projects   # {project}/{ts}-{tool}-{id8}.md + PROJECT.md + LATEST.md
     autoSaveIntervalSeconds: 300
     hydrationTokenLimit: 12000
     hydrationRankingWeights:

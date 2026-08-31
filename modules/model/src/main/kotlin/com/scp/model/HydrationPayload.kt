@@ -12,6 +12,12 @@ import kotlinx.serialization.Serializable
 public data class HydrationPayload(
     val projectName: String,
     val projectSummary: String,
+    /**
+     * Section 0: where the last agent stopped. Emitted before every other section and charged
+     * to the budget first, so it can never be truncated away — an agent that reads nothing else
+     * still knows where to resume. Null only when the project has no sessions yet.
+     */
+    val resumePoint: ResumePoint? = null,
     val recentSessions: List<SessionBrief> = emptyList(),
     val openDecisions: List<DecisionBrief> = emptyList(),
     val openTodos: List<TodoBrief> = emptyList(),
@@ -19,9 +25,28 @@ public data class HydrationPayload(
     val relevantPrompts: List<EntryBrief> = emptyList(),
     val recentFiles: List<FileBrief> = emptyList(),
     val currentPriorities: List<PriorityBrief> = emptyList(),
+    val recentEntries: List<EntryBrief> = emptyList(),
     val omittedCount: Int = 0,
     val truncationNotice: String? = null,
     val estimatedTokens: Int = 0,
+)
+
+/**
+ * The answer to "where do I start?" — assembled from the most recently started session so a
+ * resuming agent never has to ask what was done or where work stopped.
+ *
+ * [whatWasDone] is the last session's summary; [whereWeStopped] is its recorded next step.
+ * [lastSessionWasOpen] is true when that session was never closed, which means the agent
+ * either crashed or is still running — the resuming agent must check before taking over.
+ */
+@Serializable
+public data class ResumePoint(
+    val lastSession: SessionBrief,
+    val whatWasDone: String,
+    val whereWeStopped: String,
+    val lastSessionWasOpen: Boolean,
+    val filesInFlight: List<FileBrief> = emptyList(),
+    val blockingTodos: List<TodoBrief> = emptyList(),
 )
 
 @Serializable

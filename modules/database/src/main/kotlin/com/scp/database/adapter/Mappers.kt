@@ -32,6 +32,7 @@ internal fun Session.toDomain(): com.scp.model.Session =
         summary = summary,
         tokenUsage = token_usage,
         status = SessionStatus.fromDb(status),
+        nextStep = next_step,
     )
 
 internal fun Context_entry.toDomain(tags: List<String>): com.scp.model.ContextEntry =

@@ -1,5 +1,6 @@
 package com.scp.server
 
+import com.scp.config.SecureFiles
 import io.github.oshai.kotlinlogging.KotlinLogging
 import io.ktor.utils.io.streams.asInput
 import io.modelcontextprotocol.kotlin.sdk.server.Server
@@ -31,9 +32,14 @@ public fun main() {
     val protocolStdout = FileOutputStream(FileDescriptor.out)
     System.setOut(PrintStream(FileOutputStream(FileDescriptor.err), true))
 
+    // Resolve, secure (0700), and pin the log directory BEFORE the first logger exists: logback
+    // initializes on first use and would otherwise resolve its relative appender path against the
+    // working directory rather than baseDir, splitting logs from data whenever -Dscp.home is set.
+    val baseDir = Path.of(System.getProperty("scp.home") ?: System.getProperty("user.dir")).toAbsolutePath().normalize()
+    val logDir = SecureFiles.prepareLogging(baseDir)
+
     val logger = KotlinLogging.logger("com.scp.server.Main")
-    val baseDir = Path.of(System.getProperty("scp.home") ?: System.getProperty("user.dir"))
-    logger.info { "SCP MCP server starting, baseDir=$baseDir" }
+    logger.info { "SCP MCP server starting, baseDir=$baseDir logDir=$logDir" }
 
     AppComponents.build(baseDir).use { components ->
         val server =

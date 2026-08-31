@@ -83,7 +83,12 @@ class FakeSessionRepository : SessionRepository {
             .filter { it.projectId == projectId && it.status == SessionStatus.OPEN }
             .sortedBy { it.startTime }
 
-    override fun close(id: String, endTime: Instant, summary: String?, tokenUsage: Long?) {
+    override fun findLatest(projectId: String): Session? =
+        store.values
+            .filter { it.projectId == projectId }
+            .maxByOrNull { it.startTime }
+
+    override fun close(id: String, endTime: Instant, summary: String?, tokenUsage: Long?, nextStep: String?) {
         val s = store.getValue(id)
         store[id] =
             s.copy(
@@ -91,6 +96,7 @@ class FakeSessionRepository : SessionRepository {
                 endTime = endTime,
                 summary = summary ?: s.summary,
                 tokenUsage = tokenUsage ?: s.tokenUsage,
+                nextStep = nextStep ?: s.nextStep,
             )
     }
 
