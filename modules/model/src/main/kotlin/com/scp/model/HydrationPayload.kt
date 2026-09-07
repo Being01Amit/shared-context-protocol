@@ -10,6 +10,7 @@ import kotlinx.serialization.Serializable
  */
 @Serializable
 public data class HydrationPayload(
+    val trustNotice: String = ContextTrustNotice.TEXT,
     val projectName: String,
     val projectSummary: String,
     /**
@@ -41,6 +42,7 @@ public data class HydrationPayload(
  */
 @Serializable
 public data class ResumePoint(
+    val trustNotice: String = ContextTrustNotice.RESUME_POINT_TEXT,
     val lastSession: SessionBrief,
     val whatWasDone: String,
     val whereWeStopped: String,

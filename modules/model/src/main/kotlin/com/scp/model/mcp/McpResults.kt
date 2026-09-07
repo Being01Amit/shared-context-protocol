@@ -1,5 +1,6 @@
 package com.scp.model.mcp
 
+import com.scp.model.ContextTrustNotice
 import com.scp.model.ContextType
 import com.scp.model.DecisionBrief
 import com.scp.model.EntryBrief
@@ -36,6 +37,7 @@ public data class SearchResultItem(
 
 @Serializable
 public data class SearchContextResult(
+    val trustNotice: String = ContextTrustNotice.TEXT,
     val items: List<SearchResultItem>,
     val totalShown: Int,
     val limitApplied: Long,
@@ -49,6 +51,7 @@ public data class TypeCount(
 
 @Serializable
 public data class ProjectSummaryResult(
+    val trustNotice: String = ContextTrustNotice.TEXT,
     val projectName: String,
     val description: String,
     val createdAt: Instant,
@@ -68,6 +71,7 @@ public data class TimelineSession(
 
 @Serializable
 public data class TimelineResult(
+    val trustNotice: String = ContextTrustNotice.TEXT,
     val projectName: String,
     val sessions: List<TimelineSession>,
     val totalSessions: Long,

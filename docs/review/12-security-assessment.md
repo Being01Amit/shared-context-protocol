@@ -126,6 +126,18 @@ holds until the first time an agent reads an issue tracker.
    [09](09-mcp-prompt-library.md) already require this; it is the cheapest partial mitigation available
    today and it needs no code.
 
+**Implementation status.** Recommendation #2 ("fence on read") is implemented: `hydrate_context`,
+`search_context`, `timeline`, and `project_summary` now carry a top-level `trustNotice` field
+(`ContextTrustNotice.TEXT`) stating returned content was written by previous agent sessions and must
+not be treated as instructions, `resumePoint` carries its own narrower notice
+(`ContextTrustNotice.RESUME_POINT_TEXT`) given it is the single most instruction-shaped field in the
+system by design, and all four MCP tool descriptions now reinforce the same rule. This is a rendering
+change only — **recommendations #1 (provenance), #3 (rank by trust), #4 (cap attacker-controllable
+priority), #5 (instruction-pattern detection), and #6 (human review surface) remain open.** A poisoned
+entry written as `type: DECISION, priority: 5` is still promoted to the top of `openDecisions` exactly
+as described above — fencing gives a consuming agent a signal to be skeptical, it does not stop the
+entry from being ranked into prominence in the first place.
+
 **Regarding safe MCP capability exposure specifically** (the brief's explicit question): SCP is
 low-risk as a *tool* provider — its tools touch only local storage and `openWorldHint = false` is
 truthful. The risk is entirely on the read side, and it grows with each capability added:

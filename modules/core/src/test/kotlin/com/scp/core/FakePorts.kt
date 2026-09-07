@@ -17,6 +17,9 @@ import com.scp.model.port.FileRepository
 import com.scp.model.port.IdGenerator
 import com.scp.model.port.MarkdownStore
 import com.scp.model.port.ProjectRepository
+import com.scp.model.port.SearchHit
+import com.scp.model.port.SearchIndex
+import com.scp.model.port.SearchRequest
 import com.scp.model.port.SessionMarkdown
 import com.scp.model.port.SessionRepository
 import com.scp.model.port.TodoRepository
@@ -207,6 +210,41 @@ class FakeFileRepository : FileRepository {
 
     override fun listByProject(projectId: String): List<TrackedFile> =
         store.filter { it.projectId == projectId }.sortedBy { it.path }
+}
+
+class FakeSearchIndex : SearchIndex {
+    private data class Indexed(val hit: SearchHit, val projectId: String)
+
+    private val store = mutableListOf<Indexed>()
+
+    fun index(entry: ContextEntry, projectId: String, projectName: String, toolName: String) {
+        store += Indexed(SearchHit(entry, projectName, toolName, ftsRank = 0.0), projectId)
+    }
+
+    override fun search(request: SearchRequest): List<SearchHit> {
+        val from = request.from
+        val to = request.to
+        return store
+            .filter { indexed ->
+                val entry = indexed.hit.entry
+                (request.projectId == null || indexed.projectId == request.projectId) &&
+                    (request.type == null || entry.type == request.type) &&
+                    (request.tag == null || request.tag in entry.tags) &&
+                    (from == null || entry.timestamp >= from) &&
+                    (to == null || entry.timestamp <= to) &&
+                    (
+                        request.query.isBlank() ||
+                            entry.title.contains(request.query, ignoreCase = true) ||
+                            entry.content.contains(request.query, ignoreCase = true)
+                    )
+            }.map { it.hit }
+            .take(request.limit.toInt())
+    }
+
+    override fun indexedEntryCount(): Long = store.size.toLong()
+
+    // No real FTS index behind this fake, so there is nothing to rebuild.
+    override fun rebuild() = Unit
 }
 
 class RecordingMarkdownStore : MarkdownStore {
