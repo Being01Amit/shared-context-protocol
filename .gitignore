@@ -1,16 +1,57 @@
+# Gradle and Build Outputs
 .gradle/
 build/
 **/build/
+.kotlin/
+out/
+bin/
+
+# IDEs and Editors
+.idea/
+*.iml
+*.ipr
+*.iws
+.vscode/
+.settings/
+.project
+.classpath
+
+# Local Storage and Databases
 storage/
+**/storage/
 *.db
 *.db-wal
 *.db-shm
+
 # Rollback-journal sidecar: WAL mode does not produce one today, ignored defensively in
 # case journaling mode ever changes so a runtime journal can never be committed.
 *.db-journal
+
 # SQLDelight schema snapshot is source, not runtime data (ADR-5 migration verification)
 !modules/database/src/main/sqldelight/databases/*.db
+
+# Configuration, Credentials & Local Environment
 local.properties
-.idea/
-*.iml
-.kotlin/
+.env
+.env.*
+*.pem
+*.key
+*.p12
+
+# OS Generated Files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+desktop.ini
+
+# Logs and Temporary Files
+*.log
+*.tmp
+*.swp
+*.swo
+*~
+
