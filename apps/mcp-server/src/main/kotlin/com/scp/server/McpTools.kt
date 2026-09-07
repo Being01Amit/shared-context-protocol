@@ -1,7 +1,9 @@
 package com.scp.server
 
 import com.scp.model.ContextType
+import com.scp.model.DecisionStatus
 import com.scp.model.ScpException
+import com.scp.model.TodoStatus
 import com.scp.model.mcp.CreateProjectInput
 import com.scp.model.mcp.HydrateContextInput
 import com.scp.model.mcp.McpValidations
@@ -10,6 +12,9 @@ import com.scp.model.mcp.SaveNoteInput
 import com.scp.model.mcp.SearchContextInput
 import com.scp.model.mcp.TimelineInput
 import com.scp.model.mcp.UpdateContextInput
+import com.scp.model.mcp.UpdateDecisionStatusInput
+import com.scp.model.mcp.UpdateProjectInput
+import com.scp.model.mcp.UpdateTodoStatusInput
 import com.scp.model.mcp.checkValid
 import io.github.oshai.kotlinlogging.KotlinLogging
 import io.konform.validation.Validation
@@ -74,6 +79,8 @@ private inline fun <reified I, reified R> callTool(
     }
 
 private val contextTypeEnum = JsonArray(ContextType.entries.map { JsonPrimitive(it.name) })
+private val todoStatusEnum = JsonArray(TodoStatus.entries.map { JsonPrimitive(it.name) })
+private val decisionStatusEnum = JsonArray(DecisionStatus.entries.map { JsonPrimitive(it.name) })
 
 private fun JsonObjectBuilder.prop(name: String, type: String, description: String) {
     putJsonObject(name) {
@@ -335,6 +342,78 @@ internal fun Server.registerScpTools(components: AppComponents) {
     ) { request ->
         callTool<SaveNoteInput, _>("save_note", request.arguments, McpValidations.saveNote) {
             components.saveNote.execute(it)
+        }
+    }
+
+    addTool(
+        name = "update_todo_status",
+        description = "Mark a todo's lifecycle status: OPEN, IN_PROGRESS, DONE, or DROPPED.",
+        inputSchema =
+            ToolSchema(
+                properties =
+                    buildJsonObject {
+                        prop("projectName", "string", "Project the todo belongs to")
+                        prop("todoId", "string", "Todo UUID, from update_context, hydrate_context, or project_summary")
+                        putJsonObject("status") {
+                            put("type", "string")
+                            put("enum", todoStatusEnum)
+                            put("description", "New status")
+                        }
+                    },
+                required = listOf("projectName", "todoId", "status"),
+            ),
+    ) { request ->
+        callTool<UpdateTodoStatusInput, _>("update_todo_status", request.arguments, McpValidations.updateTodoStatus) {
+            components.updateTodoStatus.execute(it)
+        }
+    }
+
+    addTool(
+        name = "update_decision_status",
+        description = "Mark a decision's lifecycle status: OPEN, ACCEPTED, SUPERSEDED, or REJECTED.",
+        inputSchema =
+            ToolSchema(
+                properties =
+                    buildJsonObject {
+                        prop("projectName", "string", "Project the decision belongs to")
+                        prop(
+                            "decisionId",
+                            "string",
+                            "Decision UUID, from update_context, hydrate_context, or project_summary",
+                        )
+                        putJsonObject("status") {
+                            put("type", "string")
+                            put("enum", decisionStatusEnum)
+                            put("description", "New status")
+                        }
+                    },
+                required = listOf("projectName", "decisionId", "status"),
+            ),
+    ) { request ->
+        callTool<UpdateDecisionStatusInput, _>(
+            "update_decision_status",
+            request.arguments,
+            McpValidations.updateDecisionStatus,
+        ) {
+            components.updateDecisionStatus.execute(it)
+        }
+    }
+
+    addTool(
+        name = "update_project",
+        description = "Update a project's description.",
+        inputSchema =
+            ToolSchema(
+                properties =
+                    buildJsonObject {
+                        prop("projectName", "string", "Project to update")
+                        prop("description", "string", "New project description")
+                    },
+                required = listOf("projectName", "description"),
+            ),
+    ) { request ->
+        callTool<UpdateProjectInput, _>("update_project", request.arguments, McpValidations.updateProject) {
+            components.updateProject.execute(it)
         }
     }
 }

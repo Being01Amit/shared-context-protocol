@@ -3,9 +3,11 @@ package com.scp.model.mcp
 import com.scp.model.ContextTrustNotice
 import com.scp.model.ContextType
 import com.scp.model.DecisionBrief
+import com.scp.model.DecisionStatus
 import com.scp.model.EntryBrief
 import com.scp.model.SessionBrief
 import com.scp.model.TodoBrief
+import com.scp.model.TodoStatus
 import kotlinx.datetime.Instant
 import kotlinx.serialization.Serializable
 
@@ -97,4 +99,25 @@ public data class SaveNoteResult(
     val entryId: String,
     val sessionId: String,
     val sessionWasCreated: Boolean,
+)
+
+@Serializable
+public data class UpdateTodoStatusResult(
+    val todoId: String,
+    val status: TodoStatus,
+)
+
+@Serializable
+public data class UpdateDecisionStatusResult(
+    val decisionId: String,
+    val status: DecisionStatus,
+    val updatedAt: Instant,
+)
+
+@Serializable
+public data class UpdateProjectResult(
+    val projectId: String,
+    val name: String,
+    val description: String,
+    val updatedAt: Instant,
 )

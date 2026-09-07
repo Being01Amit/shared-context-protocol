@@ -12,6 +12,9 @@ import com.scp.core.usecase.SaveNoteUseCase
 import com.scp.core.usecase.SearchContextUseCase
 import com.scp.core.usecase.TimelineUseCase
 import com.scp.core.usecase.UpdateContextUseCase
+import com.scp.core.usecase.UpdateDecisionStatusUseCase
+import com.scp.core.usecase.UpdateProjectUseCase
+import com.scp.core.usecase.UpdateTodoStatusUseCase
 import com.scp.database.adapter.DatabaseHandle
 import com.scp.database.adapter.DriverFactory
 import com.scp.database.adapter.SqlContextEntryRepository
@@ -35,10 +38,14 @@ import com.scp.skills.SearchContext
 import com.scp.skills.SummarizeContext
 import com.scp.skills.Timeline
 import com.scp.skills.UpdateContext
+import com.scp.skills.UpdateDecisionStatus
+import com.scp.skills.UpdateProject
+import com.scp.skills.UpdateTodoStatus
 import java.nio.file.Path
 import java.util.UUID
 
 /** CLI composition root (ADR-12) — mirror of the server's, kept per-app on purpose. */
+@Suppress("LongParameterList")
 internal class CliComponents private constructor(
     val config: ScpConfig,
     val handle: DatabaseHandle,
@@ -52,6 +59,9 @@ internal class CliComponents private constructor(
     val listProjects: ListProjects,
     val saveNote: SaveNote,
     val createProject: CreateProject,
+    val updateTodoStatus: UpdateTodoStatus,
+    val updateDecisionStatus: UpdateDecisionStatus,
+    val updateProject: UpdateProject,
 ) : AutoCloseable {
     override fun close() {
         handle.close()
@@ -132,6 +142,10 @@ internal class CliComponents private constructor(
                 listProjects = ListProjects(ListProjectsUseCase(projects, sessions)),
                 saveNote = SaveNote(SaveNoteUseCase(projects, sessions, entries, transactions, clock, ids, redaction)),
                 createProject = CreateProject(CreateProjectUseCase(projects, transactions, clock, ids)),
+                updateTodoStatus = UpdateTodoStatus(UpdateTodoStatusUseCase(projects, todos, transactions, clock)),
+                updateDecisionStatus =
+                    UpdateDecisionStatus(UpdateDecisionStatusUseCase(projects, decisions, transactions, clock)),
+                updateProject = UpdateProject(UpdateProjectUseCase(projects, transactions, clock)),
             )
         }
     }

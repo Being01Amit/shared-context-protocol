@@ -134,4 +134,18 @@ class RepositoryTest {
     fun `findByName returns null for unknown project`() {
         assertNull(SqlProjectRepository(handle.database).findByName("ghost"))
     }
+
+    @Test
+    fun `project description updates independently of touch`() {
+        val project = Fixtures.project()
+        val projects = SqlProjectRepository(handle.database)
+        projects.insert(project)
+
+        val t1 = Instant.parse("2026-07-01T11:00:00Z")
+        projects.updateDescription(project.id, "revised description", t1)
+
+        val loaded = projects.findById(project.id)!!
+        assertEquals("revised description", loaded.description)
+        assertEquals(t1, loaded.updatedAt)
+    }
 }

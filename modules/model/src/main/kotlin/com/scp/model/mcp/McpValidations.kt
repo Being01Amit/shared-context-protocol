@@ -212,6 +212,39 @@ public object McpValidations {
                 maxLength(MAX_TAG_LENGTH)
             }
         }
+
+    public val updateTodoStatus: Validation<UpdateTodoStatusInput> =
+        Validation {
+            UpdateTodoStatusInput::projectName {
+                minLength(1)
+                maxLength(MAX_NAME)
+            }
+            UpdateTodoStatusInput::todoId {
+                pattern(UUID_PATTERN) hint "todoId must be a UUID"
+            }
+        }
+
+    public val updateDecisionStatus: Validation<UpdateDecisionStatusInput> =
+        Validation {
+            UpdateDecisionStatusInput::projectName {
+                minLength(1)
+                maxLength(MAX_NAME)
+            }
+            UpdateDecisionStatusInput::decisionId {
+                pattern(UUID_PATTERN) hint "decisionId must be a UUID"
+            }
+        }
+
+    public val updateProject: Validation<UpdateProjectInput> =
+        Validation {
+            UpdateProjectInput::projectName {
+                minLength(1)
+                maxLength(MAX_NAME)
+            }
+            UpdateProjectInput::description {
+                maxLength(MAX_CONTENT)
+            }
+        }
 }
 
 /** Runs the validation and throws [InvalidInputException] with every violation listed. */

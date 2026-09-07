@@ -8,18 +8,24 @@ import com.github.ajalt.clikt.parameters.options.flag
 import com.github.ajalt.clikt.parameters.options.multiple
 import com.github.ajalt.clikt.parameters.options.option
 import com.github.ajalt.clikt.parameters.options.required
+import com.github.ajalt.clikt.parameters.types.choice
 import com.github.ajalt.clikt.parameters.types.int
 import com.github.ajalt.clikt.parameters.types.long
 import com.scp.config.SecureFiles
 import com.scp.model.ContextTrustNotice
 import com.scp.model.ContextType
+import com.scp.model.DecisionStatus
 import com.scp.model.ScpException
+import com.scp.model.TodoStatus
 import com.scp.model.mcp.CreateProjectInput
 import com.scp.model.mcp.HydrateContextInput
 import com.scp.model.mcp.ProjectSummaryInput
 import com.scp.model.mcp.SearchContextInput
 import com.scp.model.mcp.TimelineInput
 import com.scp.model.mcp.UpdateContextInput
+import com.scp.model.mcp.UpdateDecisionStatusInput
+import com.scp.model.mcp.UpdateProjectInput
+import com.scp.model.mcp.UpdateTodoStatusInput
 import kotlinx.datetime.Instant
 import kotlinx.serialization.json.Json
 import java.nio.file.Files
@@ -211,6 +217,44 @@ internal class TimelineCommand : ScpCommand("timeline") {
 
     override fun run(components: CliComponents) {
         echo(cliJson.encodeToString(components.timeline.execute(TimelineInput(project, limit))))
+    }
+}
+
+internal class UpdateTodoStatusCommand : ScpCommand("update-todo-status") {
+    private val project by option("--project", help = "Project name").required()
+    private val todoId by option("--todo-id", help = "Todo UUID").required()
+    private val status by
+        option("--status", help = "New status")
+            .choice(TodoStatus.entries.associateBy { it.name }, ignoreCase = true)
+            .required()
+
+    override fun run(components: CliComponents) {
+        val result = components.updateTodoStatus.execute(UpdateTodoStatusInput(project, todoId, status))
+        echo("Todo ${result.todoId} -> ${result.status}")
+    }
+}
+
+internal class UpdateDecisionStatusCommand : ScpCommand("update-decision-status") {
+    private val project by option("--project", help = "Project name").required()
+    private val decisionId by option("--decision-id", help = "Decision UUID").required()
+    private val status by
+        option("--status", help = "New status")
+            .choice(DecisionStatus.entries.associateBy { it.name }, ignoreCase = true)
+            .required()
+
+    override fun run(components: CliComponents) {
+        val result = components.updateDecisionStatus.execute(UpdateDecisionStatusInput(project, decisionId, status))
+        echo("Decision ${result.decisionId} -> ${result.status}")
+    }
+}
+
+internal class UpdateProjectCommand : ScpCommand("update-project") {
+    private val project by option("--project", help = "Project name").required()
+    private val description by option("--description", help = "New project description").required()
+
+    override fun run(components: CliComponents) {
+        val result = components.updateProject.execute(UpdateProjectInput(project, description))
+        echo("Updated project '${result.name}' (${result.projectId})")
     }
 }
 

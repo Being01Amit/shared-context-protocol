@@ -37,7 +37,8 @@ scp list-projects
 
 Any MCP-compatible client works identically — that is the point. The server speaks MCP
 over stdio and exposes: `update_context`, `hydrate_context`, `search_context`,
-`project_summary`, `timeline`, `list_projects`, `save_note`, `create_project`.
+`project_summary`, `timeline`, `list_projects`, `save_note`, `create_project`,
+`update_todo_status`, `update_decision_status`, `update_project`.
 
 **Claude Code:**
 
@@ -110,6 +111,9 @@ Antigravity   → hydrate_context  → ranked, token-budgeted resume payload →
 | `scp search <query> [--project N] [--type BUG] [--tag t] [--from ISO] [--to ISO] [--limit n]` | Full-text + filters |
 | `scp summary --project N` | Statistics, decisions, open todos |
 | `scp timeline --project N [--limit n]` | Full chronological history |
+| `scp update-todo-status --project N --todo-id ID --status S` | Mark a todo OPEN/IN_PROGRESS/DONE/DROPPED |
+| `scp update-decision-status --project N --decision-id ID --status S` | Mark a decision OPEN/ACCEPTED/SUPERSEDED/REJECTED |
+| `scp update-project --project N --description D` | Edit a project's description |
 | `scp doctor` | Resolved workspace paths, WAL/FK/FTS/config checks, stale sessions, and **silent projects** (created but never written to — the symptom of an agent that never calls `update_context`) |
 
 ## Configuration
