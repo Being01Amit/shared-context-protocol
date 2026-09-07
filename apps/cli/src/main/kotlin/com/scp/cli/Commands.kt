@@ -11,6 +11,7 @@ import com.github.ajalt.clikt.parameters.options.required
 import com.github.ajalt.clikt.parameters.types.int
 import com.github.ajalt.clikt.parameters.types.long
 import com.scp.config.SecureFiles
+import com.scp.model.ContextTrustNotice
 import com.scp.model.ContextType
 import com.scp.model.ScpException
 import com.scp.model.mcp.CreateProjectInput
@@ -177,6 +178,7 @@ internal class SearchCommand : ScpCommand("search") {
             echo("No matches.")
             return
         }
+        echo(ContextTrustNotice.TEXT)
         result.items.forEach {
             echo(
                 "[%.3f] %s  (%s, %s) #%s".format(

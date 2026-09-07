@@ -8,6 +8,7 @@ import com.scp.core.FakeSessionRepository
 import com.scp.core.FakeTodoRepository
 import com.scp.core.FixedClock
 import com.scp.model.ContextEntry
+import com.scp.model.ContextTrustNotice
 import com.scp.model.ContextType
 import com.scp.model.Decision
 import com.scp.model.Project
@@ -73,6 +74,7 @@ class HydrateContextUseCaseTest {
     @Test
     fun `generous budget emits all sections without truncation`() {
         val payload = useCase().execute(HydrateContextInput(projectName = "demo"))
+        assertEquals(ContextTrustNotice.TEXT, payload.trustNotice)
         assertEquals("demo", payload.projectName)
         assertEquals(1, payload.recentSessions.size)
         assertEquals(10, payload.openDecisions.size)
@@ -133,6 +135,7 @@ class HydrateContextUseCaseTest {
             nextStep = "implement PayPalAdapter.capture()",
         )
         val resume = assertNotNull(useCase().execute(HydrateContextInput(projectName = "demo")).resumePoint)
+        assertEquals(ContextTrustNotice.RESUME_POINT_TEXT, resume.trustNotice)
         assertEquals("extracted PaymentProcessor into a port", resume.whatWasDone)
         assertEquals("implement PayPalAdapter.capture()", resume.whereWeStopped)
         assertEquals("claude-code", resume.lastSession.toolName)
