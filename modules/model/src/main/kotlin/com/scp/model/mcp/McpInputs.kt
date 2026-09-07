@@ -2,11 +2,13 @@ package com.scp.model.mcp
 
 import com.scp.model.ContextEntry
 import com.scp.model.ContextType
+import com.scp.model.DecisionStatus
+import com.scp.model.TodoStatus
 import kotlinx.datetime.Instant
 import kotlinx.serialization.Serializable
 
 /**
- * Boundary DTOs for the eight MCP tools. Shape is enforced by kotlinx.serialization,
+ * Boundary DTOs for the eleven MCP tools. Shape is enforced by kotlinx.serialization,
  * constraints by the Konform validations in [McpValidations] — nothing unvalidated
  * crosses the MCP interface.
  */
@@ -105,4 +107,24 @@ public data class SaveNoteInput(
     val type: ContextType = ContextType.LEARNING,
     val tags: List<String> = emptyList(),
     val priority: Int = ContextEntry.DEFAULT_PRIORITY,
+)
+
+@Serializable
+public data class UpdateTodoStatusInput(
+    val projectName: String,
+    val todoId: String,
+    val status: TodoStatus,
+)
+
+@Serializable
+public data class UpdateDecisionStatusInput(
+    val projectName: String,
+    val decisionId: String,
+    val status: DecisionStatus,
+)
+
+@Serializable
+public data class UpdateProjectInput(
+    val projectName: String,
+    val description: String,
 )

@@ -20,6 +20,9 @@ public fun main(args: Array<String>) {
             SearchCommand(),
             SummaryCommand(),
             TimelineCommand(),
+            UpdateTodoStatusCommand(),
+            UpdateDecisionStatusCommand(),
+            UpdateProjectCommand(),
             DoctorCommand(),
         ).main(args)
 }
