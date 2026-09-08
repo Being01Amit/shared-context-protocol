@@ -87,9 +87,11 @@ Truncation is **always signaled, never silent**. The project summary (section 1)
 ## 5. Hydration payload order
 
 0. **Resume point** — the most recently *started* session (open or closed): what was done
-   (`session.summary`), where work stopped (`session.next_step`), files in flight, blocking todos.
-   Charged to the budget **first** and never omitted: an agent that reads nothing else still knows
-   where to continue. Absent only when the project has no sessions.
+   (`session.summary`), where work stopped (`session.next_step`), files in flight, blocking todos,
+   and — when the git branch/commit recorded at that session's start and a fresh read of the repo's
+   current state are both known and disagree — `gitStateNotice`, a plain-text warning that the repo
+   has moved on since. Charged to the budget **first** and never omitted: an agent that reads
+   nothing else still knows where to continue. Absent only when the project has no sessions.
 1. Project summary
 2. Last 5 sessions (most recent first; fewer if budget-constrained)
 3. Open architecture decisions (`decision.status = 'open'`, score-ordered)

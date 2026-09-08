@@ -3,6 +3,7 @@ package com.scp.core.usecase
 import com.scp.core.FakeContextEntryRepository
 import com.scp.core.FakeDecisionRepository
 import com.scp.core.FakeFileRepository
+import com.scp.core.FakeGitStateReader
 import com.scp.core.FakeProjectRepository
 import com.scp.core.FakeSessionRepository
 import com.scp.core.FakeTodoRepository
@@ -52,6 +53,7 @@ class UpdateContextUseCaseTest {
             transactions = transactions,
             clock = clock,
             ids = SequentialIds(),
+            gitStateReader = FakeGitStateReader(),
         )
 
     @BeforeTest

@@ -23,6 +23,7 @@ import com.scp.model.port.Clock
 import com.scp.model.port.ContextEntryRepository
 import com.scp.model.port.DecisionRepository
 import com.scp.model.port.FileRepository
+import com.scp.model.port.GitStateReader
 import com.scp.model.port.ProjectRepository
 import com.scp.model.port.SessionRepository
 import com.scp.model.port.TodoRepository
@@ -32,6 +33,7 @@ import com.scp.model.port.TodoRepository
  * for ordering, then a fixed-section-order token-budget fill with stop-before-overflow.
  * Never returns the full database; truncation is always signaled.
  */
+@Suppress("TooManyFunctions")
 public class HydrateContextUseCase(
     private val projects: ProjectRepository,
     private val sessions: SessionRepository,
@@ -40,6 +42,7 @@ public class HydrateContextUseCase(
     private val todos: TodoRepository,
     private val files: FileRepository,
     private val clock: Clock,
+    private val gitStateReader: GitStateReader,
     private val weights: RankingWeights,
     private val defaultTokenLimit: Int,
     private val tokenEstimator: TokenEstimator = CharsPerTokenEstimator,
@@ -138,10 +141,12 @@ public class HydrateContextUseCase(
         sessions.findLatest(projectId)?.let { latest ->
             val filesInFlight = recentFiles.take(RESUME_FILES)
             val blockingTodos = openTodos.take(RESUME_TODOS).map { it.item.toBrief() }
+            val gitStateNotice = gitStateNotice(latest)
             budget.charge(
                 latest.summary + " " + latest.nextStep +
                     filesInFlight.joinToString(" ", transform = ::renderFile) +
-                    blockingTodos.joinToString(" ", transform = ::renderTodo),
+                    blockingTodos.joinToString(" ", transform = ::renderTodo) +
+                    (gitStateNotice ?: ""),
             )
             ResumePoint(
                 lastSession = latest.toBrief(),
@@ -153,8 +158,25 @@ public class HydrateContextUseCase(
                 lastSessionWasOpen = latest.status == SessionStatus.OPEN,
                 filesInFlight = filesInFlight,
                 blockingTodos = blockingTodos,
+                gitStateNotice = gitStateNotice,
             )
         }
+
+    /**
+     * Null unless both the state recorded at [lastSession]'s start and the repo's current state
+     * are known and disagree — either side being unknown (git unavailable, or a session that
+     * predates this feature) stays silent rather than guessing.
+     */
+    private fun gitStateNotice(lastSession: com.scp.model.Session): String? {
+        val recordedBranch = lastSession.gitBranch
+        val recordedCommit = lastSession.gitCommit
+        if (recordedBranch == null && recordedCommit == null) return null
+        val current = gitStateReader.read() ?: return null
+        if (current.branch == recordedBranch && current.commit == recordedCommit) return null
+        return "The repo has moved since this session started: it was on branch " +
+            "'${recordedBranch ?: "(unknown)"}' at commit '${recordedCommit ?: "(unknown)"}', " +
+            "it's now on branch '${current.branch ?: "(unknown)"}' at commit '${current.commit ?: "(unknown)"}'."
+    }
 
     private data class Scored<T>(val item: T, val score: Double)
 

@@ -21,3 +21,16 @@ public fun interface Clock {
 public fun interface IdGenerator {
     public fun newId(): String
 }
+
+/** The calling process's git branch and commit, when known. Either field may be absent on its own:
+ * [branch] is null for a detached HEAD, [commit] is null for a repo with no commits yet. */
+public data class GitState(val branch: String?, val commit: String?)
+
+/**
+ * Injectable git-state source — deterministic in tests. Returns null when the process isn't
+ * running inside a git working tree, `git` isn't available, or the read fails; that means
+ * "unknown," never "no branch."
+ */
+public fun interface GitStateReader {
+    public fun read(): GitState?
+}

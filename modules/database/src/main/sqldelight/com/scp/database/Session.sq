@@ -18,7 +18,11 @@ CREATE TABLE session (
     -- whole-second timestamp sorts after every fractional one in its second. Ordering the
     -- resume anchor that way hands the next agent an older session. Every ORDER BY and range
     -- filter on session time uses this column; start_time stays as the human-readable form.
-    start_time_epoch_nanos INTEGER NOT NULL DEFAULT 0
+    start_time_epoch_nanos INTEGER NOT NULL DEFAULT 0,
+    -- Git branch/commit observed when the session was created (migration 3->4). Both nullable:
+    -- unknown for sessions predating this column, or when git wasn't available at creation time.
+    git_branch TEXT,
+    git_commit TEXT
 );
 
 CREATE INDEX idx_session_project_status ON session(project_id, status);
@@ -26,8 +30,8 @@ CREATE INDEX idx_session_start_time     ON session(start_time);
 CREATE INDEX idx_session_start_nanos    ON session(project_id, start_time_epoch_nanos);
 
 insertSession:
-INSERT INTO session(id, project_id, tool_name, start_time, end_time, summary, token_usage, status, next_step, start_time_epoch_nanos)
-VALUES (:id, :projectId, :toolName, :startTime, :endTime, :summary, :tokenUsage, :status, :nextStep, :startTimeEpochNanos);
+INSERT INTO session(id, project_id, tool_name, start_time, end_time, summary, token_usage, status, next_step, start_time_epoch_nanos, git_branch, git_commit)
+VALUES (:id, :projectId, :toolName, :startTime, :endTime, :summary, :tokenUsage, :status, :nextStep, :startTimeEpochNanos, :gitBranch, :gitCommit);
 
 findById:
 SELECT * FROM session WHERE id = :id;

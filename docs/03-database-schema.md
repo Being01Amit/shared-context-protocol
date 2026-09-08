@@ -46,7 +46,9 @@ CREATE TABLE session (
     token_usage INTEGER,                             -- NULL if the tool doesn't report it
     status      TEXT NOT NULL DEFAULT 'open' CHECK (status IN ('open', 'closed')),
     next_step   TEXT NOT NULL DEFAULT '',            -- where the NEXT agent starts (v2, 1.sqm)
-    start_time_epoch_nanos INTEGER NOT NULL DEFAULT 0 -- sortable start_time (v3, 2.sqm)
+    start_time_epoch_nanos INTEGER NOT NULL DEFAULT 0, -- sortable start_time (v3, 2.sqm)
+    git_branch  TEXT,                                -- git state observed at session creation (v4, 3.sqm)
+    git_commit  TEXT                                 -- NULL for both when git wasn't available
 );
 
 CREATE INDEX idx_session_project_status ON session(project_id, status);
@@ -64,6 +66,12 @@ so `2026-08-31T12:44:34.732Z` sorts *after* the later `2026-08-31T12:44:34.73276
 whole-second timestamp sorts after every fractional one in its second. Ordering `findLatest` that way
 hands the next agent an older session as its resume anchor. The 2.sqm backfill is whole-second only
 (SQLite's date functions accept at most 3 fractional digits); rows written since are exact.
+
+**git_branch / git_commit.** Captured once, when a session is created — SCP shells out to `git`
+against its own process working directory, never the caller's report of its own state. Both are
+NULL when the process wasn't inside a git repo, `git` wasn't available, or the session predates
+this column. `hydrate_context` compares these against a fresh read at hydration time and, when
+both sides are known and disagree, surfaces `resumePoint.gitStateNotice` — see docs/05 §5.
 
 ### ContextEntry.sq
 

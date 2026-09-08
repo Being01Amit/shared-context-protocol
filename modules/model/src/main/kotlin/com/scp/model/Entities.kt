@@ -34,6 +34,8 @@ public data class Session(
     val tokenUsage: Long? = null,
     val status: SessionStatus = SessionStatus.OPEN,
     val nextStep: String = "",
+    val gitBranch: String? = null,
+    val gitCommit: String? = null,
 )
 
 @Serializable

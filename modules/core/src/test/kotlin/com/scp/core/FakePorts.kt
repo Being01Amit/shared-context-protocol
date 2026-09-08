@@ -14,6 +14,8 @@ import com.scp.model.port.Clock
 import com.scp.model.port.ContextEntryRepository
 import com.scp.model.port.DecisionRepository
 import com.scp.model.port.FileRepository
+import com.scp.model.port.GitState
+import com.scp.model.port.GitStateReader
 import com.scp.model.port.IdGenerator
 import com.scp.model.port.MarkdownStore
 import com.scp.model.port.ProjectRepository
@@ -29,6 +31,10 @@ import kotlinx.datetime.Instant
 /** Deterministic in-memory fakes — core tests need no database and no mocking framework. */
 class FixedClock(var current: Instant = Instant.parse("2026-07-04T12:00:00Z")) : Clock {
     override fun now(): Instant = current
+}
+
+class FakeGitStateReader(var current: GitState? = null) : GitStateReader {
+    override fun read(): GitState? = current
 }
 
 class SequentialIds : IdGenerator {

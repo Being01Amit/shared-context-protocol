@@ -69,6 +69,8 @@ public class SqlSessionRepository(private val db: ScpDatabase) : SessionReposito
             status = session.status.dbValue,
             nextStep = session.nextStep,
             startTimeEpochNanos = session.startTime.toEpochNanos(),
+            gitBranch = session.gitBranch,
+            gitCommit = session.gitCommit,
         )
     }
 
