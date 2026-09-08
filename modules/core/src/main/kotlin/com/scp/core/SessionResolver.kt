@@ -36,7 +36,7 @@ public class SessionResolver(
         }
 
         val open = sessions.findOpenByProject(projectId)
-        val reusable = open.singleOrNull()?.takeIf { it.toolName == toolName }
+        val reusable = open.filter { it.toolName == toolName }.singleOrNull()
         if (reusable != null) return Resolution(reusable, created = false)
 
         val created =

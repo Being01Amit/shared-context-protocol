@@ -23,6 +23,8 @@ public fun main(args: Array<String>) {
             UpdateTodoStatusCommand(),
             UpdateDecisionStatusCommand(),
             UpdateProjectCommand(),
+            ClaimTodoCommand(),
+            ReleaseTodoCommand(),
             DoctorCommand(),
         ).main(args)
 }

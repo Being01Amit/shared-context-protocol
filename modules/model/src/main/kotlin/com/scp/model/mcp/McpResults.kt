@@ -121,3 +121,14 @@ public data class UpdateProjectResult(
     val description: String,
     val updatedAt: Instant,
 )
+
+@Serializable
+public data class ClaimTodoResult(
+    val todoId: String,
+    val owner: String,
+)
+
+@Serializable
+public data class ReleaseTodoResult(
+    val todoId: String,
+)

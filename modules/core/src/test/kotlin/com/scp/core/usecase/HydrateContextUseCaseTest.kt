@@ -207,4 +207,28 @@ class HydrateContextUseCaseTest {
         // Decisions map to priority 5 + type weight 1.0, so they outrank todos and bugs here.
         assertEquals("decision", payload.currentPriorities.first().kind)
     }
+
+    // --- top-N cap omissions are signaled, not silent ---
+
+    @Test
+    fun `entries beyond the top-N cap are signaled as omitted, not silently dropped`() {
+        (1..20).forEach { i ->
+            entries.insert(ContextEntry("extra$i", "s1", t0, "extra $i", "body $i", ContextType.TASK))
+        }
+        val payload = useCase().execute(HydrateContextInput(projectName = "demo"))
+        assertEquals(15, payload.recentEntries.size, "capped at TOP_ENTRIES")
+        assertTrue(payload.omittedCount >= 5, "the 5 entries beyond the cap must count as omitted")
+        assertNotNull(payload.truncationNotice)
+    }
+
+    @Test
+    fun `prompts beyond the top-N cap are signaled as omitted, not silently dropped`() {
+        (1..5).forEach { i ->
+            entries.insert(ContextEntry("extraPrompt$i", "s1", t0, "extra prompt $i", "body $i", ContextType.PROMPT))
+        }
+        val payload = useCase().execute(HydrateContextInput(projectName = "demo"))
+        assertEquals(10, payload.relevantPrompts.size, "capped at TOP_PROMPTS")
+        assertTrue(payload.omittedCount >= 5, "the 5 prompts beyond the cap must count as omitted")
+        assertNotNull(payload.truncationNotice)
+    }
 }

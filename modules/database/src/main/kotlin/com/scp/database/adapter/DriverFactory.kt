@@ -132,7 +132,16 @@ public object DriverFactory {
                     ScpDatabase.Schema.migrate(driver, current, target)
                     driver.execute(null, "PRAGMA user_version = $target", 0)
                 }
-            else -> Unit
+            // An older client opening a database a newer client already migrated. Silently
+            // continuing would run this client's queries against a schema it doesn't fully
+            // understand — fail clearly instead of risking a confusing raw SQL error later.
+            current > target ->
+                throw StorageException(
+                    "This database's schema (user_version=$current) is newer than this client " +
+                        "understands (schema version $target). Upgrade SCP before opening it, or " +
+                        "point at a different database.",
+                )
+            else -> Unit // current == target: already up to date
         }
     }
 

@@ -17,9 +17,11 @@ import com.scp.model.ContextType
 import com.scp.model.DecisionStatus
 import com.scp.model.ScpException
 import com.scp.model.TodoStatus
+import com.scp.model.mcp.ClaimTodoInput
 import com.scp.model.mcp.CreateProjectInput
 import com.scp.model.mcp.HydrateContextInput
 import com.scp.model.mcp.ProjectSummaryInput
+import com.scp.model.mcp.ReleaseTodoInput
 import com.scp.model.mcp.SearchContextInput
 import com.scp.model.mcp.TimelineInput
 import com.scp.model.mcp.UpdateContextInput
@@ -255,6 +257,28 @@ internal class UpdateProjectCommand : ScpCommand("update-project") {
     override fun run(components: CliComponents) {
         val result = components.updateProject.execute(UpdateProjectInput(project, description))
         echo("Updated project '${result.name}' (${result.projectId})")
+    }
+}
+
+internal class ClaimTodoCommand : ScpCommand("claim-todo") {
+    private val project by option("--project", help = "Project name").required()
+    private val todoId by option("--todo-id", help = "Todo UUID").required()
+    private val tool by option("--tool", help = "Identity claiming this todo").required()
+
+    override fun run(components: CliComponents) {
+        val result = components.claimTodo.execute(ClaimTodoInput(project, todoId, tool))
+        echo("Todo ${result.todoId} claimed by ${result.owner}")
+    }
+}
+
+internal class ReleaseTodoCommand : ScpCommand("release-todo") {
+    private val project by option("--project", help = "Project name").required()
+    private val todoId by option("--todo-id", help = "Todo UUID").required()
+    private val tool by option("--tool", help = "Identity releasing this todo").required()
+
+    override fun run(components: CliComponents) {
+        val result = components.releaseTodo.execute(ReleaseTodoInput(project, todoId, tool))
+        echo("Todo ${result.todoId} released")
     }
 }
 

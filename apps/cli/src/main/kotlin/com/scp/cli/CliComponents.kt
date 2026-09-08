@@ -4,10 +4,12 @@ import com.scp.config.ConfigLoader
 import com.scp.config.ScpConfig
 import com.scp.config.SecureFiles
 import com.scp.core.Redaction
+import com.scp.core.usecase.ClaimTodoUseCase
 import com.scp.core.usecase.CreateProjectUseCase
 import com.scp.core.usecase.HydrateContextUseCase
 import com.scp.core.usecase.ListProjectsUseCase
 import com.scp.core.usecase.ProjectSummaryUseCase
+import com.scp.core.usecase.ReleaseTodoUseCase
 import com.scp.core.usecase.SaveNoteUseCase
 import com.scp.core.usecase.SearchContextUseCase
 import com.scp.core.usecase.TimelineUseCase
@@ -30,9 +32,11 @@ import com.scp.model.port.Clock
 import com.scp.model.port.IdGenerator
 import com.scp.model.port.MarkdownStore
 import com.scp.search.SqlSearchIndex
+import com.scp.skills.ClaimTodo
 import com.scp.skills.CreateProject
 import com.scp.skills.HydrateContext
 import com.scp.skills.ListProjects
+import com.scp.skills.ReleaseTodo
 import com.scp.skills.SaveNote
 import com.scp.skills.SearchContext
 import com.scp.skills.SummarizeContext
@@ -62,6 +66,8 @@ internal class CliComponents private constructor(
     val updateTodoStatus: UpdateTodoStatus,
     val updateDecisionStatus: UpdateDecisionStatus,
     val updateProject: UpdateProject,
+    val claimTodo: ClaimTodo,
+    val releaseTodo: ReleaseTodo,
 ) : AutoCloseable {
     override fun close() {
         handle.close()
@@ -146,6 +152,8 @@ internal class CliComponents private constructor(
                 updateDecisionStatus =
                     UpdateDecisionStatus(UpdateDecisionStatusUseCase(projects, decisions, transactions, clock)),
                 updateProject = UpdateProject(UpdateProjectUseCase(projects, transactions, clock)),
+                claimTodo = ClaimTodo(ClaimTodoUseCase(projects, todos, transactions, clock)),
+                releaseTodo = ReleaseTodo(ReleaseTodoUseCase(projects, todos, transactions, clock)),
             )
         }
     }

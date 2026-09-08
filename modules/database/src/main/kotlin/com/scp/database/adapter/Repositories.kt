@@ -225,6 +225,10 @@ public class SqlTodoRepository(private val db: ScpDatabase) : TodoRepository {
     override fun updateStatus(id: String, status: TodoStatus) {
         db.todoQueries.updateStatus(status = status.dbValue, id = id)
     }
+
+    override fun updateOwner(id: String, owner: String?) {
+        db.todoQueries.updateOwner(owner = owner, id = id)
+    }
 }
 
 public class SqlFileRepository(private val db: ScpDatabase) : FileRepository {

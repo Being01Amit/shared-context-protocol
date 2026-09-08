@@ -94,6 +94,9 @@ public interface TodoRepository {
     public fun listByProject(projectId: String): List<Todo>
 
     public fun updateStatus(id: String, status: TodoStatus)
+
+    /** Sets the owning tool ([owner] = toolName to claim, null to release). */
+    public fun updateOwner(id: String, owner: String?)
 }
 
 public interface FileRepository {

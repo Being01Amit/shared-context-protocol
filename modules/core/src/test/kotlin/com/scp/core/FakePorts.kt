@@ -192,6 +192,11 @@ class FakeTodoRepository : TodoRepository {
         val index = store.indexOfFirst { it.id == id }
         store[index] = store[index].copy(status = status)
     }
+
+    override fun updateOwner(id: String, owner: String?) {
+        val index = store.indexOfFirst { it.id == id }
+        store[index] = store[index].copy(owner = owner)
+    }
 }
 
 class FakeFileRepository : FileRepository {

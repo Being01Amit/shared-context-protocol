@@ -66,6 +66,15 @@ class SessionResolverTest {
     }
 
     @Test
+    fun `two open sessions from different tools still lets each tool reuse its own`() {
+        val mine = openSession("claude-code", id = "s1")
+        openSession("antigravity", id = "s2")
+        val resolution = resolver.resolve(projectId, "claude-code", null)
+        assertFalse(resolution.created)
+        assertEquals(mine.id, resolution.session.id)
+    }
+
+    @Test
     fun `explicit session id wins even when closed`() {
         val s = openSession("claude-code")
         sessions.close(s.id, Instant.parse("2026-07-04T11:00:00Z"), null, null, null)
