@@ -31,13 +31,14 @@ Quick start: see the **[setup guide](docs/06-setup-guide.md)**. Build with `.\gr
 - [Hydration ranking](docs/05-hydration-ranking.md) — scoring formula, default weights, token budget algorithm
 - [Setup guide](docs/06-setup-guide.md) — build, init, MCP client registration, CLI reference
 - [Roadmap](docs/07-roadmap.md) — future features and the extension points already reserved for them
+- [Security](SECURITY.md) — known limitations, including an unresolved prompt-injection / memory-poisoning risk in shared context — read this before relying on SCP across agents you don't fully trust
 
 ## Design principles (non-negotiable)
 
 1. **Local first** — fully offline, zero network calls on the core path.
 2. **Cross-AI** — no client-specific storage; any MCP client works identically.
 3. **Fast** — hydration < 1s for ~500 entries / ~50 sessions, including JVM startup.
-4. **Human readable** — everything mirrored to plain Markdown under `storage/markdown/`.
+4. **Human readable** — everything mirrored to plain Markdown under `storage/projects/`.
 5. **Extensible** — concrete extension points for embeddings, sync, git integration.
 6. **Concurrency-safe** — WAL mode + transactions + retry; concurrent tools never corrupt or silently merge each other's work.
 7. **Bounded output** — every read path has an explicit token ceiling; truncation is always signaled, never silent.
