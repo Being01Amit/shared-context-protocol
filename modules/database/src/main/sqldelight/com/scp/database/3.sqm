@@ -1,0 +1,10 @@
+-- Migration 3 -> 4: record git state at session creation.
+--
+-- hydrate_context's resume point tells the next agent where the previous one stopped, but had
+-- no way to tell it whether the repo has moved since then. These columns capture the branch
+-- and commit the process observed when the session started, so a later hydration can compare
+-- against the repo's current state and warn when they diverge. Both are nullable and
+-- deliberately unbackfilled: existing sessions simply have no recorded git state, same as a
+-- session created where `git` isn't available or the process isn't inside a repo.
+ALTER TABLE session ADD COLUMN git_branch TEXT;
+ALTER TABLE session ADD COLUMN git_commit TEXT;

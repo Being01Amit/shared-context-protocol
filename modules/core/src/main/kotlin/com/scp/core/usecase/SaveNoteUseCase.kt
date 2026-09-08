@@ -9,6 +9,7 @@ import com.scp.model.mcp.SaveNoteInput
 import com.scp.model.mcp.SaveNoteResult
 import com.scp.model.port.Clock
 import com.scp.model.port.ContextEntryRepository
+import com.scp.model.port.GitStateReader
 import com.scp.model.port.IdGenerator
 import com.scp.model.port.ProjectRepository
 import com.scp.model.port.SessionRepository
@@ -26,9 +27,10 @@ public class SaveNoteUseCase(
     private val transactions: TransactionRunner,
     private val clock: Clock,
     private val ids: IdGenerator,
+    private val gitStateReader: GitStateReader,
     private val redactionPatterns: List<RedactionPattern> = Redaction.defaultPatterns,
 ) {
-    private val resolver = SessionResolver(sessions, clock, ids)
+    private val resolver = SessionResolver(sessions, clock, ids, gitStateReader)
 
     public fun execute(input: SaveNoteInput): SaveNoteResult {
         val project =

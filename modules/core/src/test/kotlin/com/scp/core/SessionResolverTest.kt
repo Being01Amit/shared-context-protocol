@@ -4,6 +4,7 @@ import com.scp.model.InvalidInputException
 import com.scp.model.NotFoundException
 import com.scp.model.Session
 import com.scp.model.SessionStatus
+import com.scp.model.port.GitState
 import kotlinx.datetime.Instant
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -15,7 +16,8 @@ import kotlin.test.assertTrue
 class SessionResolverTest {
     private val sessions = FakeSessionRepository()
     private val clock = FixedClock()
-    private val resolver = SessionResolver(sessions, clock, SequentialIds())
+    private val gitStateReader = FakeGitStateReader()
+    private val resolver = SessionResolver(sessions, clock, SequentialIds(), gitStateReader)
     private val projectId = "project-1"
 
     private fun openSession(tool: String, id: String = "s-$tool"): Session {
@@ -99,5 +101,21 @@ class SessionResolverTest {
             )
         sessions.insert(s)
         assertFailsWith<InvalidInputException> { resolver.resolve(projectId, "claude-code", s.id) }
+    }
+
+    @Test
+    fun `records git state on a newly created session when available`() {
+        gitStateReader.current = GitState(branch = "main", commit = "abc123")
+        val resolution = resolver.resolve(projectId, "claude-code", null)
+        assertEquals("main", resolution.session.gitBranch)
+        assertEquals("abc123", resolution.session.gitCommit)
+    }
+
+    @Test
+    fun `leaves git state null on a newly created session when unavailable`() {
+        gitStateReader.current = null
+        val resolution = resolver.resolve(projectId, "claude-code", null)
+        assertEquals(null, resolution.session.gitBranch)
+        assertEquals(null, resolution.session.gitCommit)
     }
 }

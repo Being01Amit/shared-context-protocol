@@ -85,7 +85,8 @@ Antigravity   → hydrate_context  → ranked, token-budgeted resume payload →
 - `hydrate_context` returns a **`resumePoint` first**: what the last agent did
   (`session.summary`) and where it stopped (`session.nextStep`), plus files in flight and blocking
   todos. It is charged to the token budget before every other section, so it can never be truncated
-  away — a resuming agent continues from there instead of asking what was done.
+  away — a resuming agent continues from there instead of asking what was done. If the repo's git
+  branch/commit have moved since that session started, `resumePoint.gitStateNotice` says so.
 
   Write `nextStep` on every save; it is what the next agent reads first:
 

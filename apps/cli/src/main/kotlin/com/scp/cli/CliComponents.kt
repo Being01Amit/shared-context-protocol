@@ -1,6 +1,7 @@
 package com.scp.cli
 
 import com.scp.config.ConfigLoader
+import com.scp.config.ProcessGitStateReader
 import com.scp.config.ScpConfig
 import com.scp.config.SecureFiles
 import com.scp.core.Redaction
@@ -29,6 +30,7 @@ import com.scp.database.adapter.SqliteTransactionRunner
 import com.scp.markdown.FileMarkdownStore
 import com.scp.markdown.NoOpMarkdownStore
 import com.scp.model.port.Clock
+import com.scp.model.port.GitStateReader
 import com.scp.model.port.IdGenerator
 import com.scp.model.port.MarkdownStore
 import com.scp.search.SqlSearchIndex
@@ -100,6 +102,7 @@ internal class CliComponents private constructor(
                         .now()
                 }
             val ids = IdGenerator { UUID.randomUUID().toString() }
+            val gitStateReader = GitStateReader { ProcessGitStateReader.read() }
             val redaction = Redaction.compile(config.secretRedactionPatterns)
             val weights = config.hydrationRankingWeights
 
@@ -121,6 +124,7 @@ internal class CliComponents private constructor(
                             transactions,
                             clock,
                             ids,
+                            gitStateReader,
                             redaction,
                         ),
                     ),
@@ -134,6 +138,7 @@ internal class CliComponents private constructor(
                             todos,
                             files,
                             clock,
+                            gitStateReader,
                             weights,
                             config.hydrationTokenLimit,
                         ),
@@ -146,7 +151,8 @@ internal class CliComponents private constructor(
                     SummarizeContext(ProjectSummaryUseCase(projects, sessions, entries, decisions, todos)),
                 timeline = Timeline(TimelineUseCase(projects, sessions, entries)),
                 listProjects = ListProjects(ListProjectsUseCase(projects, sessions)),
-                saveNote = SaveNote(SaveNoteUseCase(projects, sessions, entries, transactions, clock, ids, redaction)),
+                saveNote =
+                    SaveNote(SaveNoteUseCase(projects, sessions, entries, transactions, clock, ids, gitStateReader, redaction)),
                 createProject = CreateProject(CreateProjectUseCase(projects, transactions, clock, ids)),
                 updateTodoStatus = UpdateTodoStatus(UpdateTodoStatusUseCase(projects, todos, transactions, clock)),
                 updateDecisionStatus =

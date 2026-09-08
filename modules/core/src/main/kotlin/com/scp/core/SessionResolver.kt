@@ -5,6 +5,7 @@ import com.scp.model.NotFoundException
 import com.scp.model.Session
 import com.scp.model.SessionStatus
 import com.scp.model.port.Clock
+import com.scp.model.port.GitStateReader
 import com.scp.model.port.IdGenerator
 import com.scp.model.port.SessionRepository
 
@@ -21,6 +22,7 @@ public class SessionResolver(
     private val sessions: SessionRepository,
     private val clock: Clock,
     private val idGenerator: IdGenerator,
+    private val gitStateReader: GitStateReader,
 ) {
     public data class Resolution(val session: Session, val created: Boolean)
 
@@ -39,6 +41,7 @@ public class SessionResolver(
         val reusable = open.filter { it.toolName == toolName }.singleOrNull()
         if (reusable != null) return Resolution(reusable, created = false)
 
+        val gitState = gitStateReader.read()
         val created =
             Session(
                 id = idGenerator.newId(),
@@ -46,6 +49,8 @@ public class SessionResolver(
                 toolName = toolName,
                 startTime = clock.now(),
                 status = SessionStatus.OPEN,
+                gitBranch = gitState?.branch,
+                gitCommit = gitState?.commit,
             )
         sessions.insert(created)
         return Resolution(created, created = true)

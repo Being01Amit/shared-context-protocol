@@ -49,6 +49,12 @@ public data class ResumePoint(
     val lastSessionWasOpen: Boolean,
     val filesInFlight: List<FileBrief> = emptyList(),
     val blockingTodos: List<TodoBrief> = emptyList(),
+    /**
+     * Set only when the repo's current git state is known, the state recorded at the start of
+     * [lastSession] is also known, and the two differ — e.g. the resuming agent isn't the one
+     * that last touched this project. Null whenever either side is unknown or they match.
+     */
+    val gitStateNotice: String? = null,
 )
 
 @Serializable

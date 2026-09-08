@@ -3,6 +3,7 @@ package com.scp.core.usecase
 import com.scp.core.FakeContextEntryRepository
 import com.scp.core.FakeDecisionRepository
 import com.scp.core.FakeFileRepository
+import com.scp.core.FakeGitStateReader
 import com.scp.core.FakeProjectRepository
 import com.scp.core.FakeSessionRepository
 import com.scp.core.FakeTodoRepository
@@ -16,6 +17,7 @@ import com.scp.model.RankingWeights
 import com.scp.model.Session
 import com.scp.model.Todo
 import com.scp.model.mcp.HydrateContextInput
+import com.scp.model.port.GitState
 import kotlinx.datetime.Instant
 import kotlin.test.BeforeTest
 import kotlin.test.Test
@@ -34,6 +36,7 @@ class HydrateContextUseCaseTest {
     private val todos = FakeTodoRepository()
     private val files = FakeFileRepository()
     private val clock = FixedClock(Instant.parse("2026-07-04T00:00:00Z"))
+    private val gitStateReader = FakeGitStateReader()
 
     private fun useCase(tokenLimit: Int = 12_000) =
         HydrateContextUseCase(
@@ -44,6 +47,7 @@ class HydrateContextUseCaseTest {
             todos = todos,
             files = files,
             clock = clock,
+            gitStateReader = gitStateReader,
             weights = RankingWeights(),
             defaultTokenLimit = tokenLimit,
         )
@@ -230,5 +234,40 @@ class HydrateContextUseCaseTest {
         assertEquals(10, payload.relevantPrompts.size, "capped at TOP_PROMPTS")
         assertTrue(payload.omittedCount >= 5, "the 5 prompts beyond the cap must count as omitted")
         assertNotNull(payload.truncationNotice)
+    }
+
+    // --- git-state mismatch notice ---
+
+    @Test
+    fun `git state notice flags a branch and commit that moved since the last session`() {
+        sessions.close("s1", endTime = t0, summary = "did a thing", tokenUsage = null, nextStep = "next")
+        sessions.store["s1"] = sessions.store.getValue("s1").copy(gitBranch = "feature-x", gitCommit = "aaa")
+        gitStateReader.current = GitState(branch = "main", commit = "bbb")
+        val resume = assertNotNull(useCase().execute(HydrateContextInput(projectName = "demo")).resumePoint)
+        val notice = assertNotNull(resume.gitStateNotice)
+        assertTrue("feature-x" in notice && "main" in notice)
+    }
+
+    @Test
+    fun `git state notice is absent when nothing has moved`() {
+        sessions.store["s1"] = sessions.store.getValue("s1").copy(gitBranch = "main", gitCommit = "aaa")
+        gitStateReader.current = GitState(branch = "main", commit = "aaa")
+        val resume = assertNotNull(useCase().execute(HydrateContextInput(projectName = "demo")).resumePoint)
+        assertNull(resume.gitStateNotice)
+    }
+
+    @Test
+    fun `git state notice is absent when the recorded session predates git tracking`() {
+        gitStateReader.current = GitState(branch = "main", commit = "bbb")
+        val resume = assertNotNull(useCase().execute(HydrateContextInput(projectName = "demo")).resumePoint)
+        assertNull(resume.gitStateNotice, "s1 has no recorded git state — nothing to compare against")
+    }
+
+    @Test
+    fun `git state notice is absent when the current state is unknown`() {
+        sessions.store["s1"] = sessions.store.getValue("s1").copy(gitBranch = "main", gitCommit = "aaa")
+        gitStateReader.current = null
+        val resume = assertNotNull(useCase().execute(HydrateContextInput(projectName = "demo")).resumePoint)
+        assertNull(resume.gitStateNotice, "unknown current state must not be reported as a mismatch")
     }
 }

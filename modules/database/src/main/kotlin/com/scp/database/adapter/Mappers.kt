@@ -33,6 +33,8 @@ internal fun Session.toDomain(): com.scp.model.Session =
         tokenUsage = token_usage,
         status = SessionStatus.fromDb(status),
         nextStep = next_step,
+        gitBranch = git_branch,
+        gitCommit = git_commit,
     )
 
 internal fun Context_entry.toDomain(tags: List<String>): com.scp.model.ContextEntry =
