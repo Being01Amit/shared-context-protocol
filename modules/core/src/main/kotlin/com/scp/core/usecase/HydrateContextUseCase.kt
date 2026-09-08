@@ -65,9 +65,10 @@ public class HydrateContextUseCase(
         val openDecisions = rankBy(decisions.findOpenByProject(project.id), RankableItem::fromDecision, query)
         val openTodos = rankBy(todos.findOpenByProject(project.id), RankableItem::fromTodo, query)
         val openBugs = rankBy(entries.findRecentByType(project.id, ContextType.BUG, CANDIDATE_LIMIT), RankableItem::fromEntry, query)
-        val prompts =
+        val rankedPrompts =
             rankBy(entries.findRecentByType(project.id, ContextType.PROMPT, CANDIDATE_LIMIT), RankableItem::fromEntry, query)
-                .take(TOP_PROMPTS)
+        budget.recordOmitted((rankedPrompts.size - TOP_PROMPTS).coerceAtLeast(0))
+        val prompts = rankedPrompts.take(TOP_PROMPTS)
         val recentFiles = files.findRecentlyModified(project.id, FILE_COUNT).map { it.toBrief() }
         val priorities = currentPriorities(openDecisions, openTodos, openBugs)
 
@@ -76,14 +77,16 @@ public class HydrateContextUseCase(
         // what it built is stored, indexed, and never returned on the resume path. BUG and PROMPT
         // are excluded here only because they already have dedicated sections; the per-type
         // multipliers in RankingWeights do the prioritizing across the rest.
-        val recentEntries =
+        val rankedEntries =
             rankBy(
                 entries
                     .findRecent(project.id, CANDIDATE_LIMIT)
                     .filterNot { it.type == ContextType.BUG || it.type == ContextType.PROMPT },
                 RankableItem::fromEntry,
                 query,
-            ).take(TOP_ENTRIES)
+            )
+        budget.recordOmitted((rankedEntries.size - TOP_ENTRIES).coerceAtLeast(0))
+        val recentEntries = rankedEntries.take(TOP_ENTRIES)
 
         // Section 0: the resume anchor, charged to the budget FIRST so it can never be truncated
         // away. An agent that reads nothing else still knows where the last one stopped.
@@ -180,6 +183,15 @@ public class HydrateContextUseCase(
         var omitted: Int = 0
             private set
 
+        /**
+         * Records omissions that happen before fill() ever runs — e.g. a fixed top-N cap
+         * dropping already-ranked candidates. Keeps [omitted] the single source of truth for
+         * "truncation is always signaled" regardless of which stage caused the drop.
+         */
+        fun recordOmitted(count: Int) {
+            if (count > 0) omitted += count
+        }
+
         fun <T> fill(candidates: List<T>, render: (T) -> String): List<T> {
             val emitted = mutableListOf<T>()
             candidates.forEachIndexed { index, candidate ->
@@ -243,6 +255,12 @@ public class HydrateContextUseCase(
 
     private companion object {
         const val SESSION_COUNT = 5L
+
+        // Known, deliberately unfixed gap: an entry beyond this SQL LIMIT is never fetched, so it
+        // can't be ranked or counted toward `omitted` either — unlike the post-rank TOP_ENTRIES/
+        // TOP_PROMPTS caps (see recordOmitted), which are signaled. Closing this would need an
+        // extra countByType() call per hydration; deferred given ADR-2's latency findings and the
+        // rarity of a single project accumulating 50+ recent entries of one type.
         const val CANDIDATE_LIMIT = 50L
         const val TOP_PROMPTS = 10
         const val TOP_ENTRIES = 15

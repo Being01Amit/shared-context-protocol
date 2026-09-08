@@ -8,7 +8,7 @@ import kotlinx.datetime.Instant
 import kotlinx.serialization.Serializable
 
 /**
- * Boundary DTOs for the eleven MCP tools. Shape is enforced by kotlinx.serialization,
+ * Boundary DTOs for the thirteen MCP tools. Shape is enforced by kotlinx.serialization,
  * constraints by the Konform validations in [McpValidations] — nothing unvalidated
  * crosses the MCP interface.
  */
@@ -127,4 +127,18 @@ public data class UpdateDecisionStatusInput(
 public data class UpdateProjectInput(
     val projectName: String,
     val description: String,
+)
+
+@Serializable
+public data class ClaimTodoInput(
+    val projectName: String,
+    val todoId: String,
+    val toolName: String,
+)
+
+@Serializable
+public data class ReleaseTodoInput(
+    val projectName: String,
+    val todoId: String,
+    val toolName: String,
 )

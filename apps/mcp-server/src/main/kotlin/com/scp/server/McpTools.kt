@@ -4,10 +4,12 @@ import com.scp.model.ContextType
 import com.scp.model.DecisionStatus
 import com.scp.model.ScpException
 import com.scp.model.TodoStatus
+import com.scp.model.mcp.ClaimTodoInput
 import com.scp.model.mcp.CreateProjectInput
 import com.scp.model.mcp.HydrateContextInput
 import com.scp.model.mcp.McpValidations
 import com.scp.model.mcp.ProjectSummaryInput
+import com.scp.model.mcp.ReleaseTodoInput
 import com.scp.model.mcp.SaveNoteInput
 import com.scp.model.mcp.SearchContextInput
 import com.scp.model.mcp.TimelineInput
@@ -414,6 +416,46 @@ internal fun Server.registerScpTools(components: AppComponents) {
     ) { request ->
         callTool<UpdateProjectInput, _>("update_project", request.arguments, McpValidations.updateProject) {
             components.updateProject.execute(it)
+        }
+    }
+
+    addTool(
+        name = "claim_todo",
+        description =
+            "Claim a todo for the calling tool. Succeeds if unclaimed or already claimed by you " +
+                "(idempotent); otherwise rejected with the current owner's name.",
+        inputSchema =
+            ToolSchema(
+                properties =
+                    buildJsonObject {
+                        prop("projectName", "string", "Project the todo belongs to")
+                        prop("todoId", "string", "Todo UUID, from update_context, hydrate_context, or project_summary")
+                        prop("toolName", "string", "Identity claiming this todo, e.g. 'claude-code'")
+                    },
+                required = listOf("projectName", "todoId", "toolName"),
+            ),
+    ) { request ->
+        callTool<ClaimTodoInput, _>("claim_todo", request.arguments, McpValidations.claimTodo) {
+            components.claimTodo.execute(it)
+        }
+    }
+
+    addTool(
+        name = "release_todo",
+        description = "Release a todo claimed by the calling tool. Fails if you don't currently own it.",
+        inputSchema =
+            ToolSchema(
+                properties =
+                    buildJsonObject {
+                        prop("projectName", "string", "Project the todo belongs to")
+                        prop("todoId", "string", "Todo UUID, from update_context, hydrate_context, or project_summary")
+                        prop("toolName", "string", "Identity releasing this todo, e.g. 'claude-code'")
+                    },
+                required = listOf("projectName", "todoId", "toolName"),
+            ),
+    ) { request ->
+        callTool<ReleaseTodoInput, _>("release_todo", request.arguments, McpValidations.releaseTodo) {
+            components.releaseTodo.execute(it)
         }
     }
 }

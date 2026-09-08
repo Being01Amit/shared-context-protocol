@@ -60,18 +60,25 @@ simply not finished. → [F-24](03-module-analysis.md)
 
 ### 2 · Hydration never returns most of what agents store — P0
 
-`hydrate_context` fetches entries of exactly two types: `BUG` and `PROMPT`. `ContextType` has sixteen
-members. Entries typed `ARCHITECTURE`, `FEATURE`, `TASK`, `LEARNING`, `REFACTOR`, `SECURITY` and eight
-others are validated, redacted, persisted, and indexed — and never appear on the resume path.
+**Implementation status: fixed, this finding is stale.** As of the current code, `hydrate_context`
+already fetches every `ContextType` — `BUG`/`PROMPT` keep their own dedicated sections, and
+`ContextEntryRepository.findRecent` feeds a `recentEntries` catch-all for the other fourteen types,
+filtered only to avoid duplicating the two dedicated sections. This was verified directly against
+`HydrateContextUseCase.kt`, not carried forward from an earlier pass of this document, and is pinned by
+an existing test (`` `non-bug non-prompt entries are hydrated, not silently dropped` ``) plus
+`docs/05-hydration-ranking.md` §5. Likely landed as part of the same commit that added this review.
 
-Decisions and todos come back, because they are separate tables. Implementation progress and reasoning
-— recorded as typed entries — do not. And because `omittedCount` only counts budget drops, not
-type-filtered or SQL-`LIMIT`ed candidates, **nothing tells the next agent it is missing anything**.
+What was still true — `omittedCount` didn't count the post-rank top-N caps on `recentEntries`
+(`TOP_ENTRIES`) or `relevantPrompts` (`TOP_PROMPTS`), so entries beyond those caps were dropped without
+signaling — has since been fixed too: `Budget.recordOmitted` now accounts for cap-based drops
+alongside budget-fill truncation. The SQL `CANDIDATE_LIMIT` bound (entries beyond it are never fetched
+at all) remains a known, deliberately deferred gap — see the comment on `CANDIDATE_LIMIT` in
+`HydrateContextUseCase.kt`.
 
-The information is recoverable via `search_context` or `timeline`. The agent has no signal to look.
-The fix is small: `ContextEntryRepository.findRecent` already exists and is unused, and
-`RankingWeights.DEFAULT_TYPE_MULTIPLIERS` already assigns a weight to all sixteen types — the intent is
-visible in the code. → [F-07](01-architecture-review.md), [F-08](01-architecture-review.md)
+Original finding text, preserved for history: `hydrate_context` fetches entries of exactly two types:
+`BUG` and `PROMPT`. `ContextType` has sixteen members. Entries typed `ARCHITECTURE`, `FEATURE`, `TASK`,
+`LEARNING`, `REFACTOR`, `SECURITY` and eight others are validated, redacted, persisted, and indexed —
+and never appear on the resume path. → [F-07](01-architecture-review.md), [F-08](01-architecture-review.md)
 
 ### 3 · Prompt injection and memory poisoning are entirely unaddressed — P0
 

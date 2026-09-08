@@ -24,3 +24,6 @@ SELECT * FROM todo WHERE project_id = :projectId ORDER BY created_at;
 
 updateStatus:
 UPDATE todo SET status = :status WHERE id = :id;
+
+updateOwner:
+UPDATE todo SET owner = :owner WHERE id = :id;

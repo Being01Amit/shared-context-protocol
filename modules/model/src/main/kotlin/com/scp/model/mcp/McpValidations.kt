@@ -245,6 +245,36 @@ public object McpValidations {
                 maxLength(MAX_CONTENT)
             }
         }
+
+    public val claimTodo: Validation<ClaimTodoInput> =
+        Validation {
+            ClaimTodoInput::projectName {
+                minLength(1)
+                maxLength(MAX_NAME)
+            }
+            ClaimTodoInput::todoId {
+                pattern(UUID_PATTERN) hint "todoId must be a UUID"
+            }
+            ClaimTodoInput::toolName {
+                minLength(1)
+                maxLength(MAX_NAME)
+            }
+        }
+
+    public val releaseTodo: Validation<ReleaseTodoInput> =
+        Validation {
+            ReleaseTodoInput::projectName {
+                minLength(1)
+                maxLength(MAX_NAME)
+            }
+            ReleaseTodoInput::todoId {
+                pattern(UUID_PATTERN) hint "todoId must be a UUID"
+            }
+            ReleaseTodoInput::toolName {
+                minLength(1)
+                maxLength(MAX_NAME)
+            }
+        }
 }
 
 /** Runs the validation and throws [InvalidInputException] with every violation listed. */

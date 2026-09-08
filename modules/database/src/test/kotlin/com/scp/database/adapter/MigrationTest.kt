@@ -4,10 +4,12 @@ import app.cash.sqldelight.db.QueryResult
 import app.cash.sqldelight.db.SqlDriver
 import app.cash.sqldelight.driver.jdbc.sqlite.JdbcSqliteDriver
 import com.scp.database.ScpDatabase
+import com.scp.model.StorageException
 import org.junit.jupiter.api.io.TempDir
 import java.nio.file.Path
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFailsWith
 import kotlin.test.assertTrue
 
 /**
@@ -121,5 +123,16 @@ class MigrationTest {
         DriverFactory.open(path).use { handle ->
             assertEquals(ScpDatabase.Schema.version, userVersion(handle.driver))
         }
+    }
+
+    @Test
+    fun `opening a database newer than the client's schema fails clearly instead of silently succeeding`() {
+        val path = tmp.resolve("scp.db")
+        DriverFactory.open(path).use { }
+        JdbcSqliteDriver("jdbc:sqlite:${path.toAbsolutePath()}").use { driver ->
+            driver.execute(null, "PRAGMA user_version = ${ScpDatabase.Schema.version + 1}", 0)
+        }
+        val failure = assertFailsWith<StorageException> { DriverFactory.open(path) }
+        assertTrue("newer" in failure.message.orEmpty().lowercase())
     }
 }
