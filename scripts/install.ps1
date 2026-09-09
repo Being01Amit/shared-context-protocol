@@ -31,14 +31,14 @@ $Repo = "Being01Amit/shared-context-protocol"
 function Test-Java {
     $java = Get-Command java -ErrorAction SilentlyContinue
     if (-not $java) {
-        Write-Warning "No 'java' on PATH. SCP needs JDK 21+ to run."
+        Write-Warning "No 'java' on PATH. SCP needs JDK 17+ to run."
         return
     }
     $first = (& java -version 2>&1 | Select-Object -First 1 | Out-String)
     if ($first -match '"(\d+)') {
         $major = [int]$Matches[1]
-        if ($major -lt 21) {
-            Write-Warning "Java $major found, but SCP needs JDK 21+. Install a newer JDK before running scpx."
+        if ($major -lt 17) {
+            Write-Warning "Java $major found, but SCP needs JDK 17+. Install a newer JDK before running scpx."
         }
     }
 }

@@ -18,7 +18,7 @@ You install SCP once, point your AI tools at it, and they share one memory. No f
 
 ## Requirements
 
-- **JDK 21+** (Temurin recommended) — verify with `java -version`. The installer does not install a JVM.
+- **JDK 17+** (Temurin recommended) — verify with `java -version`. The installer does not install a JVM.
 
 ## Install
 

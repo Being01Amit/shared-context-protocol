@@ -5,6 +5,14 @@ pluginManagement {
     }
 }
 
+// Lets Gradle fetch the JDK 17 toolchain (ADR-17) on machines that only have a newer JDK,
+// so the build target never depends on what a contributor happens to have installed.
+// Version is inline rather than in the catalog (ADR-1): settings.gradle.kts declares the
+// catalog, so it cannot resolve `libs` accessors for its own plugins block.
+plugins {
+    id("org.gradle.toolchains.foojay-resolver-convention") version "1.0.0"
+}
+
 dependencyResolutionManagement {
     repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS)
     repositories {

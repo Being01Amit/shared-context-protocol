@@ -29,15 +29,15 @@ command -v unzip >/dev/null 2>&1 || die "unzip is required"
 # UnsupportedClassVersionError on the first run.
 check_java() {
     if ! command -v java >/dev/null 2>&1; then
-        log "warning: no 'java' on PATH. SCP needs JDK 21+ to run."
+        log "warning: no 'java' on PATH. SCP needs JDK 17+ to run."
         return 0
     fi
     major=$(java -version 2>&1 | head -1 | sed -E 's/.*version "([0-9]+).*/\1/')
     case "$major" in
         ''|*[!0-9]*) return 0 ;; # unrecognized format, don't guess
     esac
-    if [ "$major" -lt 21 ]; then
-        log "warning: Java $major found, but SCP needs JDK 21+. Install a newer JDK before running scpx."
+    if [ "$major" -lt 17 ]; then
+        log "warning: Java $major found, but SCP needs JDK 17+. Install a newer JDK before running scpx."
     fi
 }
 check_java

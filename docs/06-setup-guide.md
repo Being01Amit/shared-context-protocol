@@ -2,13 +2,13 @@
 
 ## Prerequisites
 
-- **JDK 21+** (Temurin recommended). Verify: `java -version`.
+- **JDK 17+** (Temurin recommended). Verify: `java -version`.
 - No Gradle install needed — the repo ships the wrapper (`gradlew` / `gradlew.bat`), only
   required if you build from source.
 
 ## Install
 
-Installs `scp` and `scp-mcp-server` from the latest [GitHub Release](https://github.com/Being01Amit/shared-context-protocol/releases)
+Installs `scpx` and `scp-mcp-server` from the latest [GitHub Release](https://github.com/Being01Amit/shared-context-protocol/releases)
 into a fixed per-user location and adds them to your PATH. Safe to re-run — each run is
 an in-place upgrade, so the registered MCP server path below never changes across versions.
 
@@ -40,7 +40,7 @@ Only needed if you're contributing to SCP itself, or want a build that isn't yet
 
 Distributions land in:
 
-- `apps/cli/build/install/scpx/bin/scp[.bat]`
+- `apps/cli/build/install/scpx/bin/scpx[.bat]`
 - `apps/mcp-server/build/install/scp-mcp-server/bin/scp-mcp-server[.bat]`
 
 > **Windows note:** if any JVM step fails with `Unable to establish loopback connection`,
