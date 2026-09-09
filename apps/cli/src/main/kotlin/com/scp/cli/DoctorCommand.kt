@@ -8,7 +8,7 @@ import kotlinx.datetime.Clock
 import kotlin.time.Duration.Companion.hours
 
 /**
- * scp doctor — health checks (docs/02 ADR-4/8, spec):
+ * scpx doctor — health checks (docs/02 ADR-4/8, spec):
  *  1. config.yaml parses and validates (implicit: components built at all)
  *  2. journal_mode is WAL
  *  3. foreign_keys is ON

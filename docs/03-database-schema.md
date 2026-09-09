@@ -192,7 +192,7 @@ END;
 
 Why external content: text is stored once (in `context_entry`); the FTS table holds only the inverted index and joins back **by rowid**, which is what lets structured filters compose with `MATCH` in plain SQL (§4) instead of being approximated inside FTS query syntax.
 
-Repair path (used by `scp doctor` if row counts diverge):
+Repair path (used by `scpx doctor` if row counts diverge):
 
 ```sql
 INSERT INTO context_entry_fts(context_entry_fts) VALUES ('rebuild');
@@ -258,4 +258,4 @@ erDiagram
 
 ## 7. Doctor checks tied to this schema
 
-`scp doctor` (Phase 5) verifies: `PRAGMA journal_mode` returns `wal`; `PRAGMA foreign_keys` returns `1`; `SELECT count(*) FROM context_entry` equals `SELECT count(*) FROM context_entry_fts`; and lists sessions where `status='open' AND start_time < now − 24h`.
+`scpx doctor` (Phase 5) verifies: `PRAGMA journal_mode` returns `wal`; `PRAGMA foreign_keys` returns `1`; `SELECT count(*) FROM context_entry` equals `SELECT count(*) FROM context_entry_fts`; and lists sessions where `status='open' AND start_time < now − 24h`.

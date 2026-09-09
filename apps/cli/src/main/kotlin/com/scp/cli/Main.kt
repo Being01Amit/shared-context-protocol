@@ -29,6 +29,6 @@ public fun main(args: Array<String>) {
         ).main(args)
 }
 
-internal class Scp : CliktCommand(name = "scp") {
+internal class Scp : CliktCommand(name = "scpx") {
     override fun run(): Unit = Unit
 }

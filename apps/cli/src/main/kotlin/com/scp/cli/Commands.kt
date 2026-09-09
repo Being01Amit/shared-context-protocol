@@ -109,7 +109,7 @@ internal class ListProjectsCommand : ScpCommand("list-projects") {
     override fun run(components: CliComponents) {
         val result = components.listProjects.execute()
         if (result.projects.isEmpty()) {
-            echo("No projects yet — create one with: scp create-project --name <name>")
+            echo("No projects yet — create one with: scpx create-project --name <name>")
             return
         }
         result.projects.forEach {

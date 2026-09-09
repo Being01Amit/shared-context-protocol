@@ -1,10 +1,10 @@
 <#
 .SYNOPSIS
-    Installs SCP (scp + scp-mcp-server) from a GitHub Release into a fixed per-user
+    Installs SCP (scpx + scp-mcp-server) from a GitHub Release into a fixed per-user
     location and adds it to the user PATH. Safe to re-run: each run is an in-place upgrade.
 
 .PARAMETER Version
-    A specific release tag to install, e.g. "v0.1.0". Omit to install the latest release.
+    A specific release tag to install, e.g. "v0.2.0". Omit to install the latest release.
 
 .PARAMETER InstallDir
     Install root. Defaults to $env:SCP_INSTALL_DIR or "$env:LOCALAPPDATA\scp".
@@ -13,7 +13,7 @@
     irm https://raw.githubusercontent.com/Being01Amit/shared-context-protocol/main/scripts/install.ps1 | iex
 
 .EXAMPLE
-    .\install.ps1 -Version v0.1.0
+    .\install.ps1 -Version v0.2.0
 #>
 [CmdletBinding()]
 param(
@@ -38,7 +38,7 @@ function Test-Java {
     if ($first -match '"(\d+)') {
         $major = [int]$Matches[1]
         if ($major -lt 21) {
-            Write-Warning "Java $major found, but SCP needs JDK 21+. Install a newer JDK before running scp."
+            Write-Warning "Java $major found, but SCP needs JDK 21+. Install a newer JDK before running scpx."
         }
     }
 }
@@ -125,7 +125,16 @@ Test-Java
 
 New-Item -ItemType Directory -Path $InstallDir -Force | Out-Null
 
-$scpBin = Install-Component -Name "scp"
+# v0.1.0 installed the CLI as "scp", which shadows the OpenSSH scp shipped in
+# System32\OpenSSH. Remove it on upgrade; the leftover PATH entry then resolves to
+# nothing, so the system scp works again without rewriting the user's PATH.
+$legacy = Join-Path $InstallDir "scp"
+if (Test-Path $legacy) {
+    Remove-Item -Path $legacy -Recurse -Force
+    Write-Host "Removed the legacy 'scp' install, which shadowed OpenSSH's scp. The command is now 'scpx'."
+}
+
+$scpBin = Install-Component -Name "scpx"
 $mcpBin = Install-Component -Name "scp-mcp-server"
 
 Add-ToUserPath -BinDir $scpBin
@@ -133,7 +142,7 @@ Add-ToUserPath -BinDir $mcpBin
 
 Write-Host ""
 Write-Host "SCP installed. Open a new terminal, then:"
-Write-Host "  scp init"
+Write-Host "  scpx init"
 Write-Host ""
 Write-Host "Register the MCP server with an MCP-compatible client using:"
 Write-Host "  $mcpBin\scp-mcp-server.bat"

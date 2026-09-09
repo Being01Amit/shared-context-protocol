@@ -119,7 +119,7 @@ scp/
     mcp-server/                    # StdioServerTransport wiring, tool registration
       src/main/kotlin/
       src/test/kotlin/
-    cli/                           # Clikt: scp init|update|hydrate|search|summary|timeline|doctor
+    cli/                           # Clikt: scpx init|update|hydrate|search|summary|timeline|doctor
       src/main/kotlin/
       src/test/kotlin/
   modules/
@@ -133,7 +133,7 @@ scp/
     skills/                        # UpdateContext.kt, HydrateContext.kt, SearchContext.kt,
                                    # SummarizeContext.kt, Timeline.kt — thin orchestration only
     api/                           # optional Ktor local HTTP surface (not built in v1)
-  storage/                         # runtime data (gitignored), created on `scp init`
+  storage/                         # runtime data (gitignored), created on `scpx init`
     projects/{project}/            # the markdown mirror: project-first, then date-first
       PROJECT.md                   #   index — resume point + every session, newest first
       LATEST.md                    #   copy of the newest session (the resume anchor)
