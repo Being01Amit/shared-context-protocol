@@ -1,8 +1,10 @@
 name: CI
 
 on:
+  # Every branch, not just main: trunk has lived on a feature branch before, and a
+  # main-only trigger meant CI silently never ran (which let lint/format breakage land).
   push:
-    branches: [main]
+    branches: ["**"]
   pull_request:
     branches: [main]
 
