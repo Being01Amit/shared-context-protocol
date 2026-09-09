@@ -26,7 +26,11 @@ public object ProcessGitStateReader {
                     .directory(cwd)
                     .redirectErrorStream(false)
                     .start()
-            val output = process.inputStream.bufferedReader().readText().trim()
+            val output =
+                process.inputStream
+                    .bufferedReader()
+                    .readText()
+                    .trim()
             val finished = process.waitFor(TIMEOUT_SECONDS, TimeUnit.SECONDS)
             if (!finished) {
                 process.destroyForcibly()

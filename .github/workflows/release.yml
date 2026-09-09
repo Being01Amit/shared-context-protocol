@@ -17,7 +17,7 @@ jobs:
       - uses: actions/setup-java@v4
         with:
           distribution: temurin
-          java-version: "21"
+          java-version: "17"
 
       - uses: gradle/actions/setup-gradle@v4
 
@@ -38,24 +38,27 @@ jobs:
 
       - name: Checksum distributions and add unversioned "latest" aliases
         run: |
-          # Versioned files (scp-1.2.3.zip) let the installer pin a specific release.
-          # Unversioned copies (scp.zip) let it use GitHub's stable
+          # Versioned files (scpx-1.2.3.zip) let the installer pin a specific release.
+          # Unversioned copies (scpx.zip) let it use GitHub's stable
           # /releases/latest/download/<file> URL without an API call to resolve the
           # current version first. The zip filename is captured once per directory so
           # later globs aren't confused by the alias copy this step also creates.
+          # Each sidecar is generated against the file it sits next to, never copied: a
+          # sha256sum file records the filename, so a copied one would name the versioned
+          # zip and fail verification of the alias.
           (
             cd apps/cli/build/distributions
             zip_file=$(ls *.zip)
             sha256sum "$zip_file" > "$zip_file.sha256"
-            cp "$zip_file" scp.zip
-            cp "$zip_file.sha256" scp.zip.sha256
+            cp "$zip_file" scpx.zip
+            sha256sum scpx.zip > scpx.zip.sha256
           )
           (
             cd apps/mcp-server/build/distributions
             zip_file=$(ls *.zip)
             sha256sum "$zip_file" > "$zip_file.sha256"
             cp "$zip_file" scp-mcp-server.zip
-            cp "$zip_file.sha256" scp-mcp-server.zip.sha256
+            sha256sum scp-mcp-server.zip > scp-mcp-server.zip.sha256
           )
 
       - name: Create GitHub Release

@@ -50,5 +50,5 @@ zero network calls.
 
 ## 8. Native-image startup (ADR-2 revisit trigger)
 
-- Only if a profiled `scp hydrate` exceeds 800 ms end-to-end on a medium project:
+- Only if a profiled `scpx hydrate` exceeds 800 ms end-to-end on a medium project:
   GraalVM native-image builds for `apps/cli` and `apps/mcp-server`.

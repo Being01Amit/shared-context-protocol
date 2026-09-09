@@ -1,8 +1,10 @@
 name: CI
 
 on:
+  # Every branch, not just main: trunk has lived on a feature branch before, and a
+  # main-only trigger meant CI silently never ran (which let lint/format breakage land).
   push:
-    branches: [main]
+    branches: ["**"]
   pull_request:
     branches: [main]
 
@@ -15,7 +17,7 @@ jobs:
       - uses: actions/setup-java@v4
         with:
           distribution: temurin
-          java-version: '21'
+          java-version: '17'
 
       - uses: gradle/actions/setup-gradle@v4
 

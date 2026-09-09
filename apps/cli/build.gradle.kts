@@ -8,7 +8,7 @@ plugins {
 
 kotlin {
     explicitApi()
-    jvmToolchain(21)
+    jvmToolchain(17)
 }
 
 detekt {
@@ -18,14 +18,16 @@ detekt {
 
 application {
     mainClass.set("com.scp.cli.MainKt")
-    applicationName = "scp"
+    // Not "scp": that is OpenSSH's secure-copy command on every Unix system and on
+    // Windows (System32\OpenSSH), and putting ours on PATH would shadow it.
+    applicationName = "scpx"
 }
 
 // Keep the distribution archive named "scp-<version>" regardless of the Gradle module
 // path segment (which would otherwise default the base name to "cli").
 distributions {
     main {
-        distributionBaseName.set("scp")
+        distributionBaseName.set("scpx")
     }
 }
 
