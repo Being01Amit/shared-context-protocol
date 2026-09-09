@@ -3,6 +3,7 @@ package com.scp.core
 import com.scp.model.HydrationQuery
 import com.scp.model.RankableItem
 import com.scp.model.RankingWeights
+import com.scp.model.VectorUtils
 import kotlin.math.pow
 
 /**
@@ -22,12 +23,17 @@ public object Scoring {
         val priorityNorm = (item.priority - 1).coerceIn(0, PRIORITY_SPAN) / PRIORITY_SPAN.toDouble()
         val tagJaccard = jaccard(item.tags, query.tags)
         val typeWeight = weights.multiplierFor(item.type).coerceIn(0.0, 1.0)
+        val semanticSimilarity =
+            if (weights.semantic > 0.0 && item.embedding != null && query.queryEmbedding != null) {
+                VectorUtils.cosineSimilarity(item.embedding, query.queryEmbedding)
+            } else {
+                0.0
+            }
         return (weights.recency * recency) +
             (weights.priority * priorityNorm) +
             (weights.tagOverlap * tagJaccard) +
-            (weights.type * typeWeight)
-        // Reserved: + (weights.semantic * semanticSimilarity) once embeddings land — one
-        // addend, no interface change (docs/05 §6).
+            (weights.type * typeWeight) +
+            (weights.semantic * semanticSimilarity)
     }
 
     private fun recencyDecay(item: RankableItem, query: HydrationQuery, weights: RankingWeights): Double {

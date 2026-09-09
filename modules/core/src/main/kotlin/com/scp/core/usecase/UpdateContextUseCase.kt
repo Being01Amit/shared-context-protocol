@@ -140,6 +140,7 @@ public class UpdateContextUseCase(
             type = type,
             tags = tags,
             priority = priority,
+            embedding = embedding?.toFloatArray(),
         )
 
     private fun com.scp.model.mcp.NewDecision.toRedactedDecision(projectId: String, now: kotlinx.datetime.Instant): Decision =

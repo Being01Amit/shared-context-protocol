@@ -17,7 +17,7 @@ CREATE INDEX idx_context_entry_type      ON context_entry(type);
 
 insertEntry:
 INSERT INTO context_entry(id, session_id, timestamp, title, content, type, priority, embedding)
-VALUES (:id, :sessionId, :timestamp, :title, :content, :type, :priority, NULL);
+VALUES (:id, :sessionId, :timestamp, :title, :content, :type, :priority, :embedding);
 
 findBySession:
 SELECT * FROM context_entry WHERE session_id = :sessionId ORDER BY timestamp;

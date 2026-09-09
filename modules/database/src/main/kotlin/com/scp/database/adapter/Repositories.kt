@@ -130,6 +130,7 @@ public class SqlContextEntryRepository(private val db: ScpDatabase) : ContextEnt
                 content = entry.content,
                 type = entry.type,
                 priority = entry.priority.toLong(),
+                embedding = com.scp.model.VectorUtils.toByteArray(entry.embedding),
             )
             entry.tags.map { it.trim().lowercase() }.filter { it.isNotEmpty() }.distinct().forEach { tag ->
                 db.contextEntryTagQueries.insertTag(entryId = entry.id, tag = tag)
