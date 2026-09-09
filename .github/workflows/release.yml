@@ -1,0 +1,71 @@
+name: Release
+
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+
+      - uses: gradle/actions/setup-gradle@v4
+
+      - name: Derive version from tag
+        id: version
+        run: |
+          if [[ "${{ github.ref_type }}" == "tag" ]]; then
+            echo "value=${GITHUB_REF_NAME#v}" >> "$GITHUB_OUTPUT"
+          else
+            echo "value=0.0.0-dev" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Verify, then package distributions
+        run: |
+          ./gradlew -Pversion=${{ steps.version.outputs.value }} \
+            ktlintCheck detekt test :modules:database:verifyMainScpDatabaseMigration \
+            :apps:cli:distZip :apps:mcp-server:distZip
+
+      - name: Checksum distributions and add unversioned "latest" aliases
+        run: |
+          # Versioned files (scp-1.2.3.zip) let the installer pin a specific release.
+          # Unversioned copies (scp.zip) let it use GitHub's stable
+          # /releases/latest/download/<file> URL without an API call to resolve the
+          # current version first. The zip filename is captured once per directory so
+          # later globs aren't confused by the alias copy this step also creates.
+          (
+            cd apps/cli/build/distributions
+            zip_file=$(ls *.zip)
+            sha256sum "$zip_file" > "$zip_file.sha256"
+            cp "$zip_file" scp.zip
+            cp "$zip_file.sha256" scp.zip.sha256
+          )
+          (
+            cd apps/mcp-server/build/distributions
+            zip_file=$(ls *.zip)
+            sha256sum "$zip_file" > "$zip_file.sha256"
+            cp "$zip_file" scp-mcp-server.zip
+            cp "$zip_file.sha256" scp-mcp-server.zip.sha256
+          )
+
+      - name: Create GitHub Release
+        if: github.ref_type == 'tag'
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh release create "${{ github.ref_name }}" \
+            apps/cli/build/distributions/*.zip \
+            apps/cli/build/distributions/*.sha256 \
+            apps/mcp-server/build/distributions/*.zip \
+            apps/mcp-server/build/distributions/*.sha256 \
+            --generate-notes

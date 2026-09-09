@@ -21,6 +21,14 @@ application {
     applicationName = "scp-mcp-server"
 }
 
+// Keep the distribution archive named "scp-mcp-server-<version>" regardless of the Gradle
+// module path segment (which would otherwise default the base name to "mcp-server").
+distributions {
+    main {
+        distributionBaseName.set("scp-mcp-server")
+    }
+}
+
 dependencies {
     implementation(project(":modules:skills"))
     implementation(project(":modules:core"))

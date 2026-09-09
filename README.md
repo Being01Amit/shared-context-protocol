@@ -20,7 +20,19 @@ Antigravity → /hydrate-context → continues exactly where Claude stopped
 | 4 | MCP server (stdio, official Kotlin SDK), CLI (Clikt) | ✅ Done |
 | 5 | Integration tests (incl. concurrent writes), `scp doctor`, setup guide, roadmap | ✅ Done |
 
-Quick start: see the **[setup guide](docs/06-setup-guide.md)**. Build with `.\gradlew.bat build`, then `.\gradlew.bat installDist` for runnable `scp` / `scp-mcp-server` distributions.
+Quick start — install, then see the **[setup guide](docs/06-setup-guide.md)** for `scp init` and MCP client registration:
+
+```powershell
+# Windows
+irm https://raw.githubusercontent.com/Being01Amit/shared-context-protocol/main/scripts/install.ps1 | iex
+```
+
+```sh
+# macOS / Linux
+curl -fsSL https://raw.githubusercontent.com/Being01Amit/shared-context-protocol/main/scripts/install.sh | sh
+```
+
+Building from source instead: `.\gradlew.bat build`, then `.\gradlew.bat installDist` for runnable `scp` / `scp-mcp-server` distributions.
 
 ## Documentation
 
@@ -29,8 +41,9 @@ Quick start: see the **[setup guide](docs/06-setup-guide.md)**. Build with `.\gr
 - [Database schema (SQLDelight)](docs/03-database-schema.md) — tables, FTS5 external-content design, PRAGMAs, indexes
 - [Session resolution](docs/04-session-resolution.md) — pseudocode + sequence diagrams, concurrency handling
 - [Hydration ranking](docs/05-hydration-ranking.md) — scoring formula, default weights, token budget algorithm
-- [Setup guide](docs/06-setup-guide.md) — build, init, MCP client registration, CLI reference
+- [Setup guide](docs/06-setup-guide.md) — install, build, init, MCP client registration, CLI reference
 - [Roadmap](docs/07-roadmap.md) — future features and the extension points already reserved for them
+- [Releasing](docs/08-releasing.md) — how versioned releases are cut
 - [Security](SECURITY.md) — known limitations, including an unresolved prompt-injection / memory-poisoning risk in shared context — read this before relying on SCP across agents you don't fully trust
 
 ## Design principles (non-negotiable)
