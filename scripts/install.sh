@@ -24,6 +24,24 @@ die() {
 command -v curl >/dev/null 2>&1 || die "curl is required"
 command -v unzip >/dev/null 2>&1 || die "unzip is required"
 
+# Warn rather than abort: installing SCP before a JVM is a legitimate order, and the
+# binaries are still valid. Without this the mismatch only surfaces later as an
+# UnsupportedClassVersionError on the first run.
+check_java() {
+    if ! command -v java >/dev/null 2>&1; then
+        log "warning: no 'java' on PATH. SCP needs JDK 21+ to run."
+        return 0
+    fi
+    major=$(java -version 2>&1 | head -1 | sed -E 's/.*version "([0-9]+).*/\1/')
+    case "$major" in
+        ''|*[!0-9]*) return 0 ;; # unrecognized format, don't guess
+    esac
+    if [ "$major" -lt 21 ]; then
+        log "warning: Java $major found, but SCP needs JDK 21+. Install a newer JDK before running scp."
+    fi
+}
+check_java
+
 if [ -n "$VERSION" ]; then
     BASE_URL="https://github.com/$REPO/releases/download/$VERSION"
     VERSION_NUM="${VERSION#v}"
