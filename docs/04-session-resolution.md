@@ -130,4 +130,4 @@ Readers (a third tool running `hydrate_context` mid-write) are unaffected throug
 
 ## 6. Abandoned sessions
 
-A tool that crashes without calling `update_context` leaves an open session. That is deliberate — SCP never guesses that work is finished. `scp doctor` reports open sessions older than 24 h; the human (or the tool's next `update_context` with an explicit `session_id`) closes them. Future auto-archival is a separate feature with explicit semantics, per the spec's note on compaction.
+A tool that crashes without calling `update_context` leaves an open session. That is deliberate — SCP never guesses that work is finished. `scpx doctor` reports open sessions older than 24 h; the human (or the tool's next `update_context` with an explicit `session_id`) closes them. Future auto-archival is a separate feature with explicit semantics, per the spec's note on compaction.

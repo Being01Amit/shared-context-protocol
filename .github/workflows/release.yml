@@ -38,8 +38,8 @@ jobs:
 
       - name: Checksum distributions and add unversioned "latest" aliases
         run: |
-          # Versioned files (scp-1.2.3.zip) let the installer pin a specific release.
-          # Unversioned copies (scp.zip) let it use GitHub's stable
+          # Versioned files (scpx-1.2.3.zip) let the installer pin a specific release.
+          # Unversioned copies (scpx.zip) let it use GitHub's stable
           # /releases/latest/download/<file> URL without an API call to resolve the
           # current version first. The zip filename is captured once per directory so
           # later globs aren't confused by the alias copy this step also creates.
@@ -50,8 +50,8 @@ jobs:
             cd apps/cli/build/distributions
             zip_file=$(ls *.zip)
             sha256sum "$zip_file" > "$zip_file.sha256"
-            cp "$zip_file" scp.zip
-            sha256sum scp.zip > scp.zip.sha256
+            cp "$zip_file" scpx.zip
+            sha256sum scpx.zip > scpx.zip.sha256
           )
           (
             cd apps/mcp-server/build/distributions

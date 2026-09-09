@@ -36,7 +36,7 @@ Native-image would add a second build pipeline, reflection config for kotlinx.se
 
 **Revisit trigger.** A profiled hydration run exceeding 800 ms end-to-end on a medium project. Then: GraalVM native-image for `apps/cli` and `apps/mcp-server` (ADR to be written at that point).
 
-**Measured 2026-07-04 (Phase 5).** `Measure-Command { scp hydrate --project medium --tag m3 }` on the seeded medium fixture (50 sessions / 503 entries), Windows 11, Temurin 21, launched via the `installDist` `.bat` script: **884–950 ms** over three runs — *inside the 1 s budget* but past the 800 ms revisit threshold. Note the measurement includes `cmd.exe` + launcher script overhead on top of the JVM itself. Watch item, not an action item: if it regresses further, the cheap first step is AppCDS (`-XX:SharedArchiveFile`) before reaching for native-image. The MCP server path is unaffected — it is a long-lived process; cold-start applies once per session, not per tool call.
+**Measured 2026-07-04 (Phase 5).** `Measure-Command { scpx hydrate --project medium --tag m3 }` on the seeded medium fixture (50 sessions / 503 entries), Windows 11, Temurin 21, launched via the `installDist` `.bat` script: **884–950 ms** over three runs — *inside the 1 s budget* but past the 800 ms revisit threshold. Note the measurement includes `cmd.exe` + launcher script overhead on top of the JVM itself. Watch item, not an action item: if it regresses further, the cheap first step is AppCDS (`-XX:SharedArchiveFile`) before reaching for native-image. The MCP server path is unaffected — it is a long-lived process; cold-start applies once per session, not per tool call.
 
 ---
 
@@ -65,7 +65,7 @@ PRAGMA synchronous = NORMAL;  -- safe with WAL; fsync at checkpoint, not every c
 
 **Rationale.** Multiple AI tools run separate SCP processes against the same file. WAL gives readers-don't-block-writer and writer-doesn't-block-readers across processes — this is the foundation of the concurrency story, not a tuning flag. `foreign_keys=ON` must be explicit or every FK in the schema is decorative.
 
-**Consequences.** `scp doctor` verifies `journal_mode` is `wal` and `foreign_keys` is `1` and fails loudly if not. `-wal`/`-shm` sidecar files appear next to the DB (normal).
+**Consequences.** `scpx doctor` verifies `journal_mode` is `wal` and `foreign_keys` is `1` and fails loudly if not. `-wal`/`-shm` sidecar files appear next to the DB (normal).
 
 **Revisit trigger.** None. Disabling WAL would be a correctness regression.
 
@@ -113,7 +113,7 @@ PRAGMA synchronous = NORMAL;  -- safe with WAL; fsync at checkpoint, not every c
 
 **Rationale.** External content stores the text once (in `context_entry`), not twice. Because the FTS table joins back to the content table by rowid, structured filters (project, type, tags, date range) compose with the full-text `MATCH` in **one SQL query with joins** — instead of being faked inside FTS query syntax.
 
-**Consequences.** Triggers are part of the schema (in `.sq`), so the index can never drift from the table under normal operation. `scp doctor` cross-checks row counts as a corruption tripwire, and `INSERT INTO context_entry_fts(context_entry_fts) VALUES('rebuild')` is the documented repair.
+**Consequences.** Triggers are part of the schema (in `.sq`), so the index can never drift from the table under normal operation. `scpx doctor` cross-checks row counts as a corruption tripwire, and `INSERT INTO context_entry_fts(context_entry_fts) VALUES('rebuild')` is the documented repair.
 
 **Revisit trigger.** Semantic search lands (then FTS5 stays for keyword search; vectors are additive — see ADR-6 embedding column note in [architecture §6](01-architecture.md#6-extension-points-concrete-reserved-now)).
 

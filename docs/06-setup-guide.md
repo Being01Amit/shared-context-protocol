@@ -24,8 +24,8 @@ irm https://raw.githubusercontent.com/Being01Amit/shared-context-protocol/main/s
 curl -fsSL https://raw.githubusercontent.com/Being01Amit/shared-context-protocol/main/scripts/install.sh | sh
 ```
 
-Both scripts accept a specific version to pin (e.g. `.\install.ps1 -Version v0.1.0` /
-`./install.sh v0.1.0`) and install under `$env:LOCALAPPDATA\scp` /
+Both scripts accept a specific version to pin (e.g. `.\install.ps1 -Version v0.2.0` /
+`./install.sh v0.2.0`) and install under `$env:LOCALAPPDATA\scp` /
 `$HOME/.scp` by default (override with `SCP_INSTALL_DIR`). Open a new shell afterward so
 the PATH change takes effect.
 
@@ -40,7 +40,7 @@ Only needed if you're contributing to SCP itself, or want a build that isn't yet
 
 Distributions land in:
 
-- `apps/cli/build/install/scp/bin/scp[.bat]`
+- `apps/cli/build/install/scpx/bin/scp[.bat]`
 - `apps/mcp-server/build/install/scp-mcp-server/bin/scp-mcp-server[.bat]`
 
 > **Windows note:** if any JVM step fails with `Unable to establish loopback connection`,
@@ -54,9 +54,9 @@ SCP stores everything relative to its working directory (override with `-Dscp.ho
 
 ```powershell
 cd <your-scp-workspace>
-scp init                                  # storage dirs + default config.yaml + database
-scp create-project --name my-app --description "Payments service rewrite"
-scp list-projects
+scpx init                                  # storage dirs + default config.yaml + database
+scpx create-project --name my-app --description "Payments service rewrite"
+scpx list-projects
 ```
 
 ## Register the MCP server with an AI tool
@@ -122,7 +122,7 @@ Antigravity   → hydrate_context  → ranked, token-budgeted resume payload →
   Write `nextStep` on every save; it is what the next agent reads first:
 
   ```powershell
-  scp update --project my-app --summary "what changed" --next-step "what to do next"
+  scpx update --project my-app --summary "what changed" --next-step "what to do next"
   ```
 
 > **Upgrading an existing workspace.** The markdown root moved from `storage/markdown` to
@@ -136,20 +136,20 @@ Antigravity   → hydrate_context  → ranked, token-budgeted resume payload →
 
 | Command | Purpose |
 |---|---|
-| `scp init` | Create storage dirs, default `config.yaml`, database schema |
-| `scp create-project --name N [--description D]` | Register a project |
-| `scp list-projects` | Projects with session counts |
-| `scp update --project N [--tool T] [--summary S] [--next-step S] [--keep-open] [--json payload.json]` | Store context (full payload via `--json`) |
-| `scp hydrate --project N [--tag t]... [--token-limit n]` | Ranked resume payload (JSON) |
-| `scp search <query> [--project N] [--type BUG] [--tag t] [--from ISO] [--to ISO] [--limit n]` | Full-text + filters |
-| `scp summary --project N` | Statistics, decisions, open todos |
-| `scp timeline --project N [--limit n]` | Full chronological history |
-| `scp update-todo-status --project N --todo-id ID --status S` | Mark a todo OPEN/IN_PROGRESS/DONE/DROPPED |
-| `scp update-decision-status --project N --decision-id ID --status S` | Mark a decision OPEN/ACCEPTED/SUPERSEDED/REJECTED |
-| `scp update-project --project N --description D` | Edit a project's description |
-| `scp claim-todo --project N --todo-id ID --tool T` | Claim a todo (fails if claimed by another tool) |
-| `scp release-todo --project N --todo-id ID --tool T` | Release a todo you claimed |
-| `scp doctor` | Resolved workspace paths, WAL/FK/FTS/config checks, stale sessions, and **silent projects** (created but never written to — the symptom of an agent that never calls `update_context`) |
+| `scpx init` | Create storage dirs, default `config.yaml`, database schema |
+| `scpx create-project --name N [--description D]` | Register a project |
+| `scpx list-projects` | Projects with session counts |
+| `scpx update --project N [--tool T] [--summary S] [--next-step S] [--keep-open] [--json payload.json]` | Store context (full payload via `--json`) |
+| `scpx hydrate --project N [--tag t]... [--token-limit n]` | Ranked resume payload (JSON) |
+| `scpx search <query> [--project N] [--type BUG] [--tag t] [--from ISO] [--to ISO] [--limit n]` | Full-text + filters |
+| `scpx summary --project N` | Statistics, decisions, open todos |
+| `scpx timeline --project N [--limit n]` | Full chronological history |
+| `scpx update-todo-status --project N --todo-id ID --status S` | Mark a todo OPEN/IN_PROGRESS/DONE/DROPPED |
+| `scpx update-decision-status --project N --decision-id ID --status S` | Mark a decision OPEN/ACCEPTED/SUPERSEDED/REJECTED |
+| `scpx update-project --project N --description D` | Edit a project's description |
+| `scpx claim-todo --project N --todo-id ID --tool T` | Claim a todo (fails if claimed by another tool) |
+| `scpx release-todo --project N --todo-id ID --tool T` | Release a todo you claimed |
+| `scpx doctor` | Resolved workspace paths, WAL/FK/FTS/config checks, stale sessions, and **silent projects** (created but never written to — the symptom of an agent that never calls `update_context`) |
 
 ## Configuration
 
@@ -165,7 +165,7 @@ never written to disk (keep it out of `config.yaml` and the repo).
 
 ```powershell
 $env:SCP_DB_KEY = 'a-long-random-passphrase'
-scp init            # creates an encrypted database
+scpx init            # creates an encrypted database
 ```
 
 For an MCP client, pass it in the server's `env` block alongside `SCP_LOG_DIR`:

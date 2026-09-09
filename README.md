@@ -34,19 +34,19 @@ irm https://raw.githubusercontent.com/Being01Amit/shared-context-protocol/main/s
 curl -fsSL https://raw.githubusercontent.com/Being01Amit/shared-context-protocol/main/scripts/install.sh | sh
 ```
 
-This downloads the latest release, verifies its SHA-256 checksum, installs `scp` and `scp-mcp-server`, and adds them to your PATH. Re-running it upgrades in place — the install path stays stable, so your MCP client config never needs updating.
+This downloads the latest release, verifies its SHA-256 checksum, installs `scpx` and `scp-mcp-server`, and adds them to your PATH. Re-running it upgrades in place — the install path stays stable, so your MCP client config never needs updating.
 
 | | Default install location | Override |
 |---|---|---|
 | Windows | `%LOCALAPPDATA%\scp` | `-InstallDir` or `SCP_INSTALL_DIR` |
 | macOS / Linux | `~/.scp` | `SCP_INSTALL_DIR` |
 
-Pin a specific version with `.\install.ps1 -Version v0.1.0` or `./install.sh v0.1.0`.
+Pin a specific version with `.\install.ps1 -Version v0.2.0` or `./install.sh v0.2.0`.
 
 Open a new terminal afterward so the PATH change takes effect, then verify:
 
 ```sh
-scp --help
+scpx --help
 ```
 
 ## Quick start
@@ -55,8 +55,8 @@ SCP stores everything relative to its working directory, so each project folder 
 
 ```sh
 cd my-project
-scp init
-scp create-project --name my-app --description "Payments service rewrite"
+scpx init
+scpx create-project --name my-app --description "Payments service rewrite"
 ```
 
 Then register the MCP server with your AI tool (below), and it can read and write that workspace.
@@ -111,27 +111,27 @@ Set the server's working directory (or pass `-Dscp.home=<dir>`) to your SCP work
 Write `--next-step` on every save — it is the first thing the next agent reads:
 
 ```sh
-scp update --project my-app --summary "what changed" --next-step "what to do next"
+scpx update --project my-app --summary "what changed" --next-step "what to do next"
 ```
 
 ## CLI reference
 
 | Command | Purpose |
 |---|---|
-| `scp init` | Create storage dirs, default `config.yaml`, database schema |
-| `scp create-project --name N [--description D]` | Register a project |
-| `scp list-projects` | Projects with session counts |
-| `scp update --project N [--tool T] [--summary S] [--next-step S] [--keep-open] [--json payload.json]` | Store context |
-| `scp hydrate --project N [--tag t]... [--token-limit n]` | Ranked resume payload (JSON) |
-| `scp search <query> [--project N] [--type BUG] [--tag t] [--from ISO] [--to ISO] [--limit n]` | Full-text search + filters |
-| `scp summary --project N` | Statistics, decisions, open todos |
-| `scp timeline --project N [--limit n]` | Full chronological history |
-| `scp update-todo-status --project N --todo-id ID --status S` | Mark a todo OPEN/IN_PROGRESS/DONE/DROPPED |
-| `scp update-decision-status --project N --decision-id ID --status S` | Mark a decision OPEN/ACCEPTED/SUPERSEDED/REJECTED |
-| `scp update-project --project N --description D` | Edit a project's description |
-| `scp claim-todo --project N --todo-id ID --tool T` | Claim a todo (fails if another tool holds it) |
-| `scp release-todo --project N --todo-id ID --tool T` | Release a todo you claimed |
-| `scp doctor` | Resolved paths, WAL/FK/FTS/config checks, stale sessions, and silent projects |
+| `scpx init` | Create storage dirs, default `config.yaml`, database schema |
+| `scpx create-project --name N [--description D]` | Register a project |
+| `scpx list-projects` | Projects with session counts |
+| `scpx update --project N [--tool T] [--summary S] [--next-step S] [--keep-open] [--json payload.json]` | Store context |
+| `scpx hydrate --project N [--tag t]... [--token-limit n]` | Ranked resume payload (JSON) |
+| `scpx search <query> [--project N] [--type BUG] [--tag t] [--from ISO] [--to ISO] [--limit n]` | Full-text search + filters |
+| `scpx summary --project N` | Statistics, decisions, open todos |
+| `scpx timeline --project N [--limit n]` | Full chronological history |
+| `scpx update-todo-status --project N --todo-id ID --status S` | Mark a todo OPEN/IN_PROGRESS/DONE/DROPPED |
+| `scpx update-decision-status --project N --decision-id ID --status S` | Mark a decision OPEN/ACCEPTED/SUPERSEDED/REJECTED |
+| `scpx update-project --project N --description D` | Edit a project's description |
+| `scpx claim-todo --project N --todo-id ID --tool T` | Claim a todo (fails if another tool holds it) |
+| `scpx release-todo --project N --todo-id ID --tool T` | Release a todo you claimed |
+| `scpx doctor` | Resolved paths, WAL/FK/FTS/config checks, stale sessions, and silent projects |
 
 ## MCP tools
 
@@ -152,7 +152,7 @@ Only needed to contribute, or to run something not yet released. No Gradle insta
 ./gradlew installDist    # runnable distributions for both apps
 ```
 
-They land in `apps/cli/build/install/scp/bin/` and `apps/mcp-server/build/install/scp-mcp-server/bin/`.
+They land in `apps/cli/build/install/scpx/bin/` and `apps/mcp-server/build/install/scp-mcp-server/bin/`.
 
 ## Documentation
 
