@@ -204,3 +204,21 @@ PRAGMA synchronous = NORMAL;  -- safe with WAL; fsync at checkpoint, not every c
 **Rationale.** Spec rule 3's own rationale — "silently merging two tools' work into one session is a correctness bug" — applies equally when only one session is open. Without this rule, Antigravity's work lands in a session labeled Claude Code.
 
 **Consequences.** See [session resolution](04-session-resolution.md) for the full algorithm and race handling.
+
+---
+
+## ADR-17 — Target Java 17, not 21 (revises ADR-1's toolchain, approved 2026-09-09)
+
+**Decision.** `jvmToolchain(17)` in every module; CI and the release build run on Temurin 17; the installers warn below 17. Distribution therefore runs on any JDK 17+.
+
+**Rationale.** Nothing in the dependency graph needs it. Measured by class-file version across the packaged jars, the highest floor is **55 (Java 11)** — `kotlin-sdk-server`, `kaml`, `logback` — and everything else is 52 (Java 8). The 21 requirement came only from our own toolchain setting.
+
+Against that, 21 cost real users: Ubuntu 24.04/26.04 ship Java 17 as the default JDK, so the out-of-the-box experience on the most common Linux distro was `UnsupportedClassVersionError` (class file 65.0 vs 61.0) and a mandatory extra `apt install` before SCP would start at all. That was the single most likely first-run failure.
+
+11 was considered and rejected: it is past mainstream support and buys almost nothing, since a machine with any JVM installed today virtually always has 17+.
+
+**Consequences.** The toolchain is set rather than only `jvmTarget`, so compilation resolves against the JDK 17 class library and a Java 18+ API cannot be referenced by accident and fail at runtime. Because the pinned toolchain may not be installed locally, `settings.gradle.kts` applies the foojay resolver so Gradle can provision JDK 17 itself; its version is inline there because a settings file cannot resolve `libs` accessors for its own `plugins` block (a narrow, documented exception to ADR-1).
+
+ADR-2's cold-start measurement (884–950 ms) was taken on Temurin 21 and has not been re-measured on 17; the budget has ~200 ms headroom and the workload is I/O- and startup-bound rather than JIT-bound, so no regression is expected.
+
+**Revisit trigger.** A dependency raising its floor above 17, or a language/API feature worth the compatibility cost.
