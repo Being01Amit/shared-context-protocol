@@ -25,6 +25,24 @@ $ErrorActionPreference = "Stop"
 
 $Repo = "Being01Amit/shared-context-protocol"
 
+# Warn rather than abort: installing SCP before a JVM is a legitimate order, and the
+# binaries are still valid. Without this the mismatch only surfaces later as an
+# UnsupportedClassVersionError on the first run.
+function Test-Java {
+    $java = Get-Command java -ErrorAction SilentlyContinue
+    if (-not $java) {
+        Write-Warning "No 'java' on PATH. SCP needs JDK 21+ to run."
+        return
+    }
+    $first = (& java -version 2>&1 | Select-Object -First 1 | Out-String)
+    if ($first -match '"(\d+)') {
+        $major = [int]$Matches[1]
+        if ($major -lt 21) {
+            Write-Warning "Java $major found, but SCP needs JDK 21+. Install a newer JDK before running scp."
+        }
+    }
+}
+
 function Get-AssetUrl {
     param([string]$Name)
     if ($Version) {
@@ -102,6 +120,8 @@ function Add-ToUserPath {
         $env:Path = "$env:Path;$BinDir"
     }
 }
+
+Test-Java
 
 New-Item -ItemType Directory -Path $InstallDir -Force | Out-Null
 
