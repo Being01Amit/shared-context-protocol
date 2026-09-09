@@ -39,17 +39,20 @@ fetch() {
 }
 
 verify_checksum() {
-    # verify_checksum <dir> <zip-filename>
-    (
-        cd "$1"
-        if command -v sha256sum >/dev/null 2>&1; then
-            sha256sum -c "$2.sha256"
-        elif command -v shasum >/dev/null 2>&1; then
-            shasum -a 256 -c "$2.sha256"
-        else
-            die "neither sha256sum nor shasum is available to verify the download"
-        fi
-    )
+    # verify_checksum <archive> <checksum-file>
+    # Compare the hash directly instead of `sha256sum -c`, which also matches the filename
+    # recorded inside the sidecar: the "latest" alias downloads as scp.zip while the
+    # sidecar names the versioned scp-<version>.zip it was generated from.
+    expected=$(cut -d' ' -f1 <"$2")
+    if command -v sha256sum >/dev/null 2>&1; then
+        actual=$(sha256sum "$1" | cut -d' ' -f1)
+    elif command -v shasum >/dev/null 2>&1; then
+        actual=$(shasum -a 256 "$1" | cut -d' ' -f1)
+    else
+        die "neither sha256sum nor shasum is available to verify the download"
+    fi
+    [ -n "$expected" ] || die "empty checksum file for $1"
+    [ "$expected" = "$actual" ] || die "checksum mismatch for $1 (expected $expected, got $actual)"
 }
 
 install_component() {
@@ -65,7 +68,7 @@ install_component() {
         || log "warning: no checksum found for $zip_name; skipping verification"
 
     if [ -f "$archive.sha256" ]; then
-        verify_checksum "$tmp_dir" "$zip_name"
+        verify_checksum "$archive" "$archive.sha256"
     fi
 
     target="$INSTALL_DIR/$name"
