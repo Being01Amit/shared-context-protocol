@@ -11,7 +11,7 @@ import kotlin.math.sqrt
 public object VectorUtils {
     public fun toByteArray(floats: FloatArray?): ByteArray? {
         if (floats == null) return null
-        val buffer = ByteBuffer.allocate(floats.size * 4).order(ByteOrder.LITTLE_ENDIAN)
+        val buffer = ByteBuffer.allocate(floats.size * Float.SIZE_BYTES).order(ByteOrder.LITTLE_ENDIAN)
         for (f in floats) {
             buffer.putFloat(f)
         }
@@ -21,7 +21,7 @@ public object VectorUtils {
     public fun toFloatArray(bytes: ByteArray?): FloatArray? {
         if (bytes == null || bytes.isEmpty()) return null
         val buffer = ByteBuffer.wrap(bytes).order(ByteOrder.LITTLE_ENDIAN)
-        val floats = FloatArray(bytes.size / 4)
+        val floats = FloatArray(bytes.size / Float.SIZE_BYTES)
         for (i in floats.indices) {
             floats[i] = buffer.getFloat()
         }
@@ -29,7 +29,9 @@ public object VectorUtils {
     }
 
     public fun cosineSimilarity(a: FloatArray?, b: FloatArray?): Double {
-        if (a == null || b == null || a.isEmpty() || b.isEmpty() || a.size != b.size) return 0.0
+        if (a == null || b == null) return 0.0
+        // A non-empty `a` of equal size implies `b` is non-empty too.
+        if (a.isEmpty() || a.size != b.size) return 0.0
         var dotProduct = 0.0
         var normA = 0.0
         var normB = 0.0

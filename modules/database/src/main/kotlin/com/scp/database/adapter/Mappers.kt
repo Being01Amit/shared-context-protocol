@@ -10,6 +10,7 @@ import com.scp.model.DecisionStatus
 import com.scp.model.SessionStatus
 import com.scp.model.TodoStatus
 import com.scp.model.TrackedFile
+import com.scp.model.VectorUtils
 import kotlinx.datetime.Instant
 
 /** Row -> domain mapping. Timestamps are ISO 8601 UTC TEXT (ADR-7). */
@@ -47,7 +48,7 @@ internal fun Context_entry.toDomain(tags: List<String>): com.scp.model.ContextEn
         type = type,
         tags = tags,
         priority = priority.toInt(),
-        embedding = com.scp.model.VectorUtils.toFloatArray(embedding),
+        embedding = VectorUtils.toFloatArray(embedding),
     )
 
 internal fun Decision.toDomain(): com.scp.model.Decision =

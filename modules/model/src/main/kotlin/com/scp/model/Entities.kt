@@ -64,7 +64,9 @@ public data class ContextEntry(
         if (embedding != null) {
             if (other.embedding == null) return false
             if (!embedding.contentEquals(other.embedding)) return false
-        } else if (other.embedding != null) return false
+        } else if (other.embedding != null) {
+            return false
+        }
         return true
     }
 

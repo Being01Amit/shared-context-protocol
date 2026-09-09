@@ -12,7 +12,10 @@ complexity:
     # write-path use-case legitimately touches 6 repositories + infra ports.
     constructorThreshold: 14
   LongMethod:
-    threshold: 80
+    # The composition roots (CliComponents.build, AppComponents.build) wire ~15 use-cases
+    # by hand; ADR-12 keeps that as one plain, readable function rather than splitting it
+    # behind helper indirection.
+    threshold: 100
   CyclomaticComplexMethod:
     threshold: 18
 

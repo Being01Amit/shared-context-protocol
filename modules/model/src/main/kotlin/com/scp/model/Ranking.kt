@@ -65,7 +65,9 @@ public data class HydrationQuery(
         if (queryEmbedding != null) {
             if (other.queryEmbedding == null) return false
             if (!queryEmbedding.contentEquals(other.queryEmbedding)) return false
-        } else if (other.queryEmbedding != null) return false
+        } else if (other.queryEmbedding != null) {
+            return false
+        }
         return true
     }
 
@@ -100,7 +102,9 @@ public data class RankableItem(
         if (embedding != null) {
             if (other.embedding == null) return false
             if (!embedding.contentEquals(other.embedding)) return false
-        } else if (other.embedding != null) return false
+        } else if (other.embedding != null) {
+            return false
+        }
         return true
     }
 
@@ -130,4 +134,3 @@ public data class RankableItem(
             RankableItem(todo.createdAt, priority = 4, tags = emptySet(), type = ContextType.TASK)
     }
 }
-
