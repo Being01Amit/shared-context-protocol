@@ -21,6 +21,14 @@ application {
     applicationName = "scp"
 }
 
+// Keep the distribution archive named "scp-<version>" regardless of the Gradle module
+// path segment (which would otherwise default the base name to "cli").
+distributions {
+    main {
+        distributionBaseName.set("scp")
+    }
+}
+
 dependencies {
     implementation(project(":modules:skills"))
     implementation(project(":modules:core"))

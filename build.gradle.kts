@@ -8,3 +8,9 @@ plugins {
     alias(libs.plugins.ktlint) apply false
     alias(libs.plugins.detekt) apply false
 }
+
+// `-Pversion=x.y.z` only sets the invoked (root) project's version by default; this
+// propagates it to every subproject so release archives are named/tagged consistently.
+allprojects {
+    version = rootProject.findProperty("version") as String? ?: "0.0.0-dev"
+}

@@ -3,9 +3,35 @@
 ## Prerequisites
 
 - **JDK 21+** (Temurin recommended). Verify: `java -version`.
-- No Gradle install needed — the repo ships the wrapper (`gradlew` / `gradlew.bat`).
+- No Gradle install needed — the repo ships the wrapper (`gradlew` / `gradlew.bat`), only
+  required if you build from source.
 
-## Build
+## Install
+
+Installs `scp` and `scp-mcp-server` from the latest [GitHub Release](https://github.com/Being01Amit/shared-context-protocol/releases)
+into a fixed per-user location and adds them to your PATH. Safe to re-run — each run is
+an in-place upgrade, so the registered MCP server path below never changes across versions.
+
+**Windows (PowerShell):**
+
+```powershell
+irm https://raw.githubusercontent.com/Being01Amit/shared-context-protocol/main/scripts/install.ps1 | iex
+```
+
+**macOS / Linux:**
+
+```sh
+curl -fsSL https://raw.githubusercontent.com/Being01Amit/shared-context-protocol/main/scripts/install.sh | sh
+```
+
+Both scripts accept a specific version to pin (e.g. `.\install.ps1 -Version v0.1.0` /
+`./install.sh v0.1.0`) and install under `$env:LOCALAPPDATA\scp` /
+`$HOME/.scp` by default (override with `SCP_INSTALL_DIR`). Open a new shell afterward so
+the PATH change takes effect.
+
+## Build from source
+
+Only needed if you're contributing to SCP itself, or want a build that isn't yet released.
 
 ```powershell
 .\gradlew.bat build          # everything: compile, tests, ktlint, detekt
@@ -41,10 +67,15 @@ over stdio and exposes: `update_context`, `hydrate_context`, `search_context`,
 `update_todo_status`, `update_decision_status`, `update_project`, `claim_todo`,
 `release_todo`.
 
+Use the path printed at the end of the installer (`$env:LOCALAPPDATA\scp\scp-mcp-server\bin\scp-mcp-server.bat`
+on Windows, `$HOME/.scp/scp-mcp-server/bin/scp-mcp-server` on macOS/Linux) — it stays the
+same across upgrades. Building from source instead, use
+`<repo>/apps/mcp-server/build/install/scp-mcp-server/bin/scp-mcp-server.bat`.
+
 **Claude Code:**
 
 ```powershell
-claude mcp add scp -- "<repo>/apps/mcp-server/build/install/scp-mcp-server/bin/scp-mcp-server.bat"
+claude mcp add scp -- "<path-from-above>"
 ```
 
 **Generic client config (JSON):**
@@ -53,7 +84,7 @@ claude mcp add scp -- "<repo>/apps/mcp-server/build/install/scp-mcp-server/bin/s
 {
   "mcpServers": {
     "scp": {
-      "command": "<repo>/apps/mcp-server/build/install/scp-mcp-server/bin/scp-mcp-server.bat",
+      "command": "<path-from-above>",
       "env": { "SCP_LOG_DIR": "<workspace>/storage/logs" }
     }
   }
