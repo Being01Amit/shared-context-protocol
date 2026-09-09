@@ -48,7 +48,39 @@ public data class ContextEntry(
     val type: ContextType,
     val tags: List<String> = emptyList(),
     val priority: Int = DEFAULT_PRIORITY,
+    val embedding: FloatArray? = null,
 ) {
+    override fun equals(other: Any?): Boolean {
+        if (this === other) return true
+        if (other !is ContextEntry) return false
+        if (id != other.id) return false
+        if (sessionId != other.sessionId) return false
+        if (timestamp != other.timestamp) return false
+        if (title != other.title) return false
+        if (content != other.content) return false
+        if (type != other.type) return false
+        if (tags != other.tags) return false
+        if (priority != other.priority) return false
+        if (embedding != null) {
+            if (other.embedding == null) return false
+            if (!embedding.contentEquals(other.embedding)) return false
+        } else if (other.embedding != null) return false
+        return true
+    }
+
+    override fun hashCode(): Int {
+        var result = id.hashCode()
+        result = 31 * result + sessionId.hashCode()
+        result = 31 * result + timestamp.hashCode()
+        result = 31 * result + title.hashCode()
+        result = 31 * result + content.hashCode()
+        result = 31 * result + type.hashCode()
+        result = 31 * result + tags.hashCode()
+        result = 31 * result + priority
+        result = 31 * result + (embedding?.contentHashCode() ?: 0)
+        return result
+    }
+
     public companion object {
         public const val MIN_PRIORITY: Int = 1
         public const val MAX_PRIORITY: Int = 5

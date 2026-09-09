@@ -60,6 +60,7 @@ public class HydrateContextUseCase(
                         .filter { it.isNotEmpty() }
                         .toSet(),
                 now = clock.now(),
+                queryEmbedding = input.embedding?.toFloatArray(),
             )
         val budget = Budget(input.tokenLimit ?: defaultTokenLimit, tokenEstimator)
 

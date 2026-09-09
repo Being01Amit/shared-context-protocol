@@ -103,4 +103,21 @@ class ScoringTest {
             assertTrue(RankingWeights.DEFAULT_TYPE_MULTIPLIERS.containsKey(type), "missing default for $type")
         }
     }
+
+    @Test
+    fun `semantic embedding similarity adds weighted score term`() {
+        val semanticWeights = RankingWeights(recency = 0.35, priority = 0.25, tagOverlap = 0.15, type = 0.15, semantic = 0.10)
+        val vec1 = floatArrayOf(1.0f, 0.0f, 0.0f)
+        val vec2 = floatArrayOf(1.0f, 0.0f, 0.0f)
+        val vec3 = floatArrayOf(0.0f, 1.0f, 0.0f)
+
+        val itemIdentical = item(ageHours = 0, priority = 5, type = ContextType.DECISION).copy(embedding = vec1)
+        val itemOrthogonal = item(ageHours = 0, priority = 5, type = ContextType.DECISION).copy(embedding = vec3)
+        val query = query().copy(queryEmbedding = vec2)
+
+        val scoreIdentical = Scoring.scoreEntry(itemIdentical, query, semanticWeights)
+        val scoreOrthogonal = Scoring.scoreEntry(itemOrthogonal, query, semanticWeights)
+
+        assertEquals(0.10, scoreIdentical - scoreOrthogonal, 1e-6, "identical vector should add exactly semantic weight 0.10")
+    }
 }

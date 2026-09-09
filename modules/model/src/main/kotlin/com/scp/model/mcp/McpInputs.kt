@@ -31,6 +31,7 @@ public data class NewEntry(
      */
     @Serializable(with = LenientInstantSerializer::class)
     val timestamp: Instant? = null,
+    val embedding: List<Float>? = null,
 )
 
 @Serializable
@@ -74,6 +75,7 @@ public data class HydrateContextInput(
     val projectName: String,
     val tags: List<String> = emptyList(),
     val tokenLimit: Int? = null,
+    val embedding: List<Float>? = null,
 )
 
 @Serializable

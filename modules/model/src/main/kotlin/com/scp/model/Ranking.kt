@@ -54,7 +54,29 @@ public data class HydrationQuery(
     val projectId: String,
     val tags: Set<String> = emptySet(),
     val now: Instant,
-)
+    val queryEmbedding: FloatArray? = null,
+) {
+    override fun equals(other: Any?): Boolean {
+        if (this === other) return true
+        if (other !is HydrationQuery) return false
+        if (projectId != other.projectId) return false
+        if (tags != other.tags) return false
+        if (now != other.now) return false
+        if (queryEmbedding != null) {
+            if (other.queryEmbedding == null) return false
+            if (!queryEmbedding.contentEquals(other.queryEmbedding)) return false
+        } else if (other.queryEmbedding != null) return false
+        return true
+    }
+
+    override fun hashCode(): Int {
+        var result = projectId.hashCode()
+        result = 31 * result + tags.hashCode()
+        result = 31 * result + now.hashCode()
+        result = 31 * result + (queryEmbedding?.contentHashCode() ?: 0)
+        return result
+    }
+}
 
 /**
  * Uniform shape every rankable entity is mapped onto before scoring, per the mapping
@@ -66,10 +88,40 @@ public data class RankableItem(
     val priority: Int,
     val tags: Set<String>,
     val type: ContextType,
+    val embedding: FloatArray? = null,
 ) {
+    override fun equals(other: Any?): Boolean {
+        if (this === other) return true
+        if (other !is RankableItem) return false
+        if (timestamp != other.timestamp) return false
+        if (priority != other.priority) return false
+        if (tags != other.tags) return false
+        if (type != other.type) return false
+        if (embedding != null) {
+            if (other.embedding == null) return false
+            if (!embedding.contentEquals(other.embedding)) return false
+        } else if (other.embedding != null) return false
+        return true
+    }
+
+    override fun hashCode(): Int {
+        var result = timestamp.hashCode()
+        result = 31 * result + priority
+        result = 31 * result + tags.hashCode()
+        result = 31 * result + type.hashCode()
+        result = 31 * result + (embedding?.contentHashCode() ?: 0)
+        return result
+    }
+
     public companion object {
         public fun fromEntry(entry: ContextEntry): RankableItem =
-            RankableItem(entry.timestamp, entry.priority, entry.tags.map { it.lowercase() }.toSet(), entry.type)
+            RankableItem(
+                timestamp = entry.timestamp,
+                priority = entry.priority,
+                tags = entry.tags.map { it.lowercase() }.toSet(),
+                type = entry.type,
+                embedding = entry.embedding,
+            )
 
         public fun fromDecision(decision: Decision): RankableItem =
             RankableItem(decision.updatedAt, ContextEntry.MAX_PRIORITY, emptySet(), ContextType.DECISION)
@@ -78,3 +130,4 @@ public data class RankableItem(
             RankableItem(todo.createdAt, priority = 4, tags = emptySet(), type = ContextType.TASK)
     }
 }
+

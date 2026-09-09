@@ -47,6 +47,7 @@ internal fun Context_entry.toDomain(tags: List<String>): com.scp.model.ContextEn
         type = type,
         tags = tags,
         priority = priority.toInt(),
+        embedding = com.scp.model.VectorUtils.toFloatArray(embedding),
     )
 
 internal fun Decision.toDomain(): com.scp.model.Decision =
