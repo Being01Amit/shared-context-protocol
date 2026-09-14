@@ -131,6 +131,42 @@ class RepositoryTest {
     }
 
     @Test
+    fun `entries and decisions within one second come back in chronological order`() {
+        val project = Fixtures.project()
+        SqlProjectRepository(handle.database).insert(project)
+        val session = Fixtures.session(project.id)
+        SqlSessionRepository(handle.database).insert(session)
+        val entries = SqlContextEntryRepository(handle.database)
+        // Instant.toString() widths 0, 3 and 9 — the case plain-TEXT ordering gets backwards.
+        val whole = Instant.parse("2026-07-01T10:00:05Z")
+        val millis = Instant.parse("2026-07-01T10:00:05.250Z")
+        val nanos = Instant.parse("2026-07-01T10:00:05.250000001Z")
+        listOf(millis, whole, nanos).forEach { entries.insert(Fixtures.entry(session.id, title = it.toString(), timestamp = it)) }
+
+        assertEquals(listOf(nanos, millis, whole), entries.findRecent(project.id, 10).map { it.timestamp })
+
+        val decisions = SqlDecisionRepository(handle.database)
+        listOf(whole, millis).forEach {
+            decisions.insert(Decision(UUID.randomUUID().toString(), project.id, it.toString(), "d", createdAt = it, updatedAt = it))
+        }
+        assertEquals(listOf(millis, whole), decisions.findOpenByProject(project.id).map { it.updatedAt })
+    }
+
+    @Test
+    fun `closing an already closed session keeps its original end time`() {
+        val project = Fixtures.project()
+        SqlProjectRepository(handle.database).insert(project)
+        val sessions = SqlSessionRepository(handle.database)
+        val session = Fixtures.session(project.id)
+        sessions.insert(session)
+        val firstEnd = Instant.parse("2026-07-01T12:00:00Z")
+        sessions.close(session.id, firstEnd, summary = "first", tokenUsage = null, nextStep = null)
+        sessions.close(session.id, Instant.parse("2026-07-03T12:00:00Z"), summary = null, tokenUsage = null, nextStep = null)
+        assertEquals(firstEnd, sessions.findById(session.id)!!.endTime)
+        assertEquals("first", sessions.findById(session.id)!!.summary)
+    }
+
+    @Test
     fun `findByName returns null for unknown project`() {
         assertNull(SqlProjectRepository(handle.database).findByName("ghost"))
     }

@@ -4,6 +4,7 @@ import app.cash.sqldelight.db.SqlDriver
 import com.scp.database.ScpDatabase
 import com.scp.database.SearchEntries
 import com.scp.database.adapter.FtsAdmin
+import com.scp.database.adapter.toStorageText
 import com.scp.model.ContextEntry
 import com.scp.model.port.SearchHit
 import com.scp.model.port.SearchIndex
@@ -28,8 +29,10 @@ public class SqlSearchIndex(
                     query = ftsQuery,
                     projectId = request.projectId,
                     type = request.type,
-                    fromTs = request.from?.toString(),
-                    toTs = request.to?.toString(),
+                    // Same fixed-width form the column is stored in, or the TEXT range compare is wrong
+                    // for any bound that falls inside a second.
+                    fromTs = request.from?.toStorageText(),
+                    toTs = request.to?.toStorageText(),
                     tag = request.tag,
                     limit = request.limit,
                 ).executeAsList()

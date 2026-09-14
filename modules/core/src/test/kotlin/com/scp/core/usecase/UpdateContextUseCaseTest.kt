@@ -12,6 +12,7 @@ import com.scp.core.PassThroughTransactionRunner
 import com.scp.core.RecordingMarkdownStore
 import com.scp.core.SequentialIds
 import com.scp.model.ContextType
+import com.scp.model.InvalidInputException
 import com.scp.model.NotFoundException
 import com.scp.model.Project
 import com.scp.model.Session
@@ -40,6 +41,7 @@ class UpdateContextUseCaseTest {
     private val markdown = RecordingMarkdownStore()
     private val transactions = PassThroughTransactionRunner()
     private val clock = FixedClock(Instant.parse("2026-07-04T12:00:00Z"))
+    private val gitStateReader = FakeGitStateReader(transactions = transactions)
 
     private val useCase =
         UpdateContextUseCase(
@@ -53,7 +55,7 @@ class UpdateContextUseCaseTest {
             transactions = transactions,
             clock = clock,
             ids = SequentialIds(),
-            gitStateReader = FakeGitStateReader(),
+            gitStateReader = gitStateReader,
         )
 
     @BeforeTest
@@ -147,7 +149,7 @@ class UpdateContextUseCaseTest {
 
     @Test
     fun `explicit session id appends to that session`() {
-        sessions.insert(Session("explicit", "p1", "cursor", t0))
+        sessions.insert(Session("explicit", "p1", "claude-code", t0))
         val result = useCase.execute(input(toolName = "claude-code", sessionId = "explicit"))
         assertEquals("explicit", result.sessionId)
         assertFalse(result.sessionWasCreated)
@@ -155,8 +157,49 @@ class UpdateContextUseCaseTest {
     }
 
     @Test
+    fun `explicit session id owned by another tool is rejected before any write`() {
+        sessions.insert(Session("explicit", "p1", "cursor", t0))
+        assertFailsWith<InvalidInputException> {
+            useCase.execute(input(toolName = "claude-code", sessionId = "explicit"))
+        }
+        assertTrue(entries.store.isEmpty())
+        assertTrue(decisions.store.isEmpty())
+    }
+
+    @Test
+    fun `late append to a closed session keeps its original end time`() {
+        val originalEnd = Instant.parse("2026-07-02T09:00:00Z")
+        sessions.insert(Session("explicit", "p1", "claude-code", t0, endTime = originalEnd, status = SessionStatus.CLOSED))
+        useCase.execute(input(toolName = "claude-code", sessionId = "explicit"))
+        assertEquals(originalEnd, sessions.findById("explicit")!!.endTime)
+    }
+
+    @Test
+    fun `a future entry timestamp is clamped to now`() {
+        val future = Instant.parse("2099-01-01T00:00:00Z")
+        val past = Instant.parse("2026-07-03T08:00:00Z")
+        useCase.execute(
+            input().copy(
+                entries =
+                    listOf(
+                        NewEntry("from the future", "x", ContextType.DECISION, timestamp = future),
+                        NewEntry("from yesterday", "y", ContextType.FEATURE, timestamp = past),
+                    ),
+            ),
+        )
+        assertEquals(clock.now(), entries.store.single { it.title == "from the future" }.timestamp)
+        assertEquals(past, entries.store.single { it.title == "from yesterday" }.timestamp, "past timestamps are kept")
+    }
+
+    @Test
     fun `all writes run inside one write transaction`() {
         useCase.execute(input())
         assertEquals(1, transactions.transactionCount)
+    }
+
+    @Test
+    fun `git state is read outside the write transaction`() {
+        useCase.execute(input())
+        assertEquals(0, gitStateReader.readsInsideTransaction, "git must never run while the write lock is held")
     }
 }

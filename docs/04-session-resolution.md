@@ -6,7 +6,7 @@ Deterministically answers: *"which Session row does this write belong to?"* — 
 
 Given a write for project `P` from tool `T` (e.g. `claude-code`, `antigravity`):
 
-1. **Explicit wins.** If the caller supplies `session_id`, validate it exists and belongs to `P` (error if not — never silently fall through), then use it. This works even on a closed session (a tool may append a late note).
+1. **Explicit wins — for the owning tool.** If the caller supplies `session_id`, validate it exists, belongs to `P`, **and was created by `T`** (error if not — never silently fall through), then use it. This works even on a closed session (a tool may append a late note); the append does not move that session's original `end_time`. An explicit id is not a way around rule 3: tool B passing tool A's session id is rejected, with the owning tool named in the error.
 2. **Reuse only your own.** If exactly one `open` session exists for `P` **and** its `tool_name == T`, reuse it.
 3. **Otherwise create.** Zero open sessions, more than one open session, or a single open session belonging to a *different* tool → create a new session for `T`. Two tools' work must never silently merge into one session — that's a correctness bug, not a convenience.
 4. **`update_context` closes.** After a successful `update_context`, the session it operated on is closed (`status='closed'`, `end_time=now`) unless the caller passed `keep_open=true`.
@@ -23,8 +23,13 @@ fun resolveSession(projectId: String, toolName: String, explicitSessionId: Strin
         val s = sessions.findById(explicitSessionId)
             ?: fail("session $explicitSessionId not found")
         require(s.projectId == projectId) { "session belongs to a different project" }
+        require(s.toolName == toolName) { "session belongs to tool ${s.toolName}" }
         return s
     }
+
+    // git runs BEFORE the transaction: it is a subprocess, and running it inside
+    // BEGIN IMMEDIATE would hold the write lock for as long as git takes.
+    val gitState = gitStateReader.read()
 
     // Atomic check-then-act: BEGIN IMMEDIATE takes the write lock up front,
     // so no second process can run this block between the SELECT and the INSERT.
@@ -130,4 +135,4 @@ Readers (a third tool running `hydrate_context` mid-write) are unaffected throug
 
 ## 6. Abandoned sessions
 
-A tool that crashes without calling `update_context` leaves an open session. That is deliberate — SCP never guesses that work is finished. `scpx doctor` reports open sessions older than 24 h; the human (or the tool's next `update_context` with an explicit `session_id`) closes them. Future auto-archival is a separate feature with explicit semantics, per the spec's note on compaction.
+A tool that crashes without calling `update_context` leaves an open session. That is deliberate — SCP never guesses that work is finished. `scpx doctor` reports open sessions older than 24 h; the human (or the owning tool's next `update_context` with an explicit `session_id` — pass the same tool name the session was opened with) closes them. Future auto-archival is a separate feature with explicit semantics, per the spec's note on compaction.

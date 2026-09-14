@@ -18,6 +18,9 @@ import com.scp.model.port.ProjectRepository
 import com.scp.model.port.SessionRepository
 import com.scp.model.port.TodoRepository
 import kotlinx.datetime.Instant
+import kotlinx.datetime.toJavaInstant
+import java.time.ZoneOffset
+import java.time.format.DateTimeFormatter
 
 public class SqlProjectRepository(private val db: ScpDatabase) : ProjectRepository {
     override fun insert(project: Project) {
@@ -25,8 +28,8 @@ public class SqlProjectRepository(private val db: ScpDatabase) : ProjectReposito
             id = project.id,
             name = project.name,
             description = project.description,
-            createdAt = project.createdAt.toString(),
-            updatedAt = project.updatedAt.toString(),
+            createdAt = project.createdAt.toStorageText(),
+            updatedAt = project.updatedAt.toStorageText(),
         )
     }
 
@@ -49,11 +52,11 @@ public class SqlProjectRepository(private val db: ScpDatabase) : ProjectReposito
             .map { it.toDomain() }
 
     override fun updateDescription(id: String, description: String, updatedAt: Instant) {
-        db.projectQueries.updateDescription(description = description, updatedAt = updatedAt.toString(), id = id)
+        db.projectQueries.updateDescription(description = description, updatedAt = updatedAt.toStorageText(), id = id)
     }
 
     override fun touch(id: String, updatedAt: Instant) {
-        db.projectQueries.touch(updatedAt = updatedAt.toString(), id = id)
+        db.projectQueries.touch(updatedAt = updatedAt.toStorageText(), id = id)
     }
 }
 
@@ -63,8 +66,8 @@ public class SqlSessionRepository(private val db: ScpDatabase) : SessionReposito
             id = session.id,
             projectId = session.projectId,
             toolName = session.toolName,
-            startTime = session.startTime.toString(),
-            endTime = session.endTime?.toString(),
+            startTime = session.startTime.toStorageText(),
+            endTime = session.endTime?.toStorageText(),
             summary = session.summary,
             tokenUsage = session.tokenUsage,
             status = session.status.dbValue,
@@ -95,7 +98,7 @@ public class SqlSessionRepository(private val db: ScpDatabase) : SessionReposito
 
     override fun close(id: String, endTime: Instant, summary: String?, tokenUsage: Long?, nextStep: String?) {
         db.sessionQueries.closeSession(
-            endTime = endTime.toString(),
+            endTime = endTime.toStorageText(),
             summary = summary,
             tokenUsage = tokenUsage,
             nextStep = nextStep,
@@ -126,7 +129,7 @@ public class SqlContextEntryRepository(private val db: ScpDatabase) : ContextEnt
             db.contextEntryQueries.insertEntry(
                 id = entry.id,
                 sessionId = entry.sessionId,
-                timestamp = entry.timestamp.toString(),
+                timestamp = entry.timestamp.toStorageText(),
                 title = entry.title,
                 content = entry.content,
                 type = entry.type,
@@ -180,8 +183,8 @@ public class SqlDecisionRepository(private val db: ScpDatabase) : DecisionReposi
             decision = decision.decision,
             reason = decision.reason,
             status = decision.status.dbValue,
-            createdAt = decision.createdAt.toString(),
-            updatedAt = decision.updatedAt.toString(),
+            createdAt = decision.createdAt.toStorageText(),
+            updatedAt = decision.updatedAt.toStorageText(),
         )
     }
 
@@ -198,7 +201,7 @@ public class SqlDecisionRepository(private val db: ScpDatabase) : DecisionReposi
             .map { it.toDomain() }
 
     override fun updateStatus(id: String, status: DecisionStatus, updatedAt: Instant) {
-        db.decisionQueries.updateStatus(status = status.dbValue, updatedAt = updatedAt.toString(), id = id)
+        db.decisionQueries.updateStatus(status = status.dbValue, updatedAt = updatedAt.toStorageText(), id = id)
     }
 }
 
@@ -210,7 +213,7 @@ public class SqlTodoRepository(private val db: ScpDatabase) : TodoRepository {
             description = todo.description,
             status = todo.status.dbValue,
             owner = todo.owner,
-            createdAt = todo.createdAt.toString(),
+            createdAt = todo.createdAt.toStorageText(),
         )
     }
 
@@ -243,7 +246,7 @@ public class SqlFileRepository(private val db: ScpDatabase) : FileRepository {
             path = file.path,
             summary = file.summary,
             hash = file.hash,
-            updatedAt = file.updatedAt.toString(),
+            updatedAt = file.updatedAt.toStorageText(),
         )
     }
 
@@ -259,6 +262,19 @@ public class SqlFileRepository(private val db: ScpDatabase) : FileRepository {
             .executeAsList()
             .map { it.toDomain() }
 }
+
+/**
+ * The stored TEXT form of an instant: ISO-8601 UTC with exactly nine fractional digits
+ * (`2026-07-15T12:44:34.732000000Z`). kotlinx `Instant.toString()` trims trailing zero groups, and
+ * TEXT comparison across fraction widths is not chronological — 'Z' outranks '.' and every digit —
+ * so every timestamp written to SQL goes through this, which keeps ORDER BY and range filters on
+ * these columns correct. `Instant.parse` reads it back unchanged. Migration 4 -> 5 rewrote
+ * pre-existing rows into this form.
+ */
+public fun Instant.toStorageText(): String = STORAGE_FORMAT.format(toJavaInstant())
+
+private val STORAGE_FORMAT: DateTimeFormatter =
+    DateTimeFormatter.ofPattern("uuuu-MM-dd'T'HH:mm:ss.SSSSSSSSS'Z'").withZone(ZoneOffset.UTC)
 
 /**
  * The sortable form of an instant: whole nanoseconds since the epoch. Written alongside the
