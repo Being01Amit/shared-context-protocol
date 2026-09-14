@@ -102,7 +102,7 @@ class ConcurrentUpdateIntegrationTest {
                     .countAll()
                     .executeAsOne()
             assertEquals(10, entryCount, "all 10 entries persisted, no data loss")
-            assertEquals(10, verifier.searchIndex.indexedEntryCount(), "FTS index consistent with entries")
+            assertTrue(verifier.searchIndex.isConsistent(), "FTS index consistent with entries")
 
             // Both markdown mirrors exist, project-first under storage/projects, plus the
             // LATEST.md resume anchor and the PROJECT.md index (shared by both writers).

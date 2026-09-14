@@ -269,7 +269,7 @@ class FakeSearchIndex : SearchIndex {
             .take(request.limit.toInt())
     }
 
-    override fun indexedEntryCount(): Long = store.size.toLong()
+    override fun isConsistent(): Boolean = true
 
     // No real FTS index behind this fake, so there is nothing to rebuild.
     override fun rebuild() = Unit

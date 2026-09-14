@@ -17,6 +17,7 @@ public class ListProjectsUseCase(
                         id = project.id,
                         name = project.name,
                         description = project.description,
+                        createdAt = project.createdAt,
                         updatedAt = project.updatedAt,
                         sessionCount = sessions.countByProject(project.id),
                     )

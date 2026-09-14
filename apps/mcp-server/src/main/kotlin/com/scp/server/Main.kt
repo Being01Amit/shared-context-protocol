@@ -39,12 +39,12 @@ public fun main() {
     val logDir = SecureFiles.prepareLogging(baseDir)
 
     val logger = KotlinLogging.logger("com.scp.server.Main")
-    logger.info { "SCP MCP server starting, baseDir=$baseDir logDir=$logDir" }
+    logger.info { "SCP MCP server ${ServerVersion.current} starting, baseDir=$baseDir logDir=$logDir" }
 
     AppComponents.build(baseDir).use { components ->
         val server =
             Server(
-                Implementation(name = "scp", version = "1.0.0"),
+                Implementation(name = "scp", version = ServerVersion.current),
                 ServerOptions(
                     capabilities = ServerCapabilities(tools = ServerCapabilities.Tools(listChanged = false)),
                 ),

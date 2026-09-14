@@ -92,9 +92,9 @@ class SqlSearchIndexTest {
     }
 
     @Test
-    fun `count and rebuild agree with entry count`() {
-        assertEquals(3, index.indexedEntryCount())
+    fun `index is consistent before and after rebuild`() {
+        assertTrue(index.isConsistent())
         index.rebuild()
-        assertEquals(3, index.indexedEntryCount())
+        assertTrue(index.isConsistent())
     }
 }

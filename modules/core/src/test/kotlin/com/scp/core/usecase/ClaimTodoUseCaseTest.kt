@@ -8,6 +8,7 @@ import com.scp.model.InvalidInputException
 import com.scp.model.NotFoundException
 import com.scp.model.Project
 import com.scp.model.Todo
+import com.scp.model.TodoStatus
 import com.scp.model.mcp.ClaimTodoInput
 import kotlinx.datetime.Instant
 import kotlin.test.BeforeTest
@@ -49,6 +50,21 @@ class ClaimTodoUseCaseTest {
         useCase.execute(ClaimTodoInput("demo", "t1", "claude-code"))
         assertFailsWith<InvalidInputException> { useCase.execute(ClaimTodoInput("demo", "t1", "antigravity")) }
         assertEquals("claude-code", todos.listByProject("p1").single().owner, "failed claim must not overwrite")
+    }
+
+    @Test
+    fun `a done or dropped todo cannot be claimed`() {
+        todos.insert(Todo(id = "t-done", projectId = "p1", description = "shipped", status = TodoStatus.DONE, createdAt = t0))
+        todos.insert(Todo(id = "t-dropped", projectId = "p1", description = "abandoned", status = TodoStatus.DROPPED, createdAt = t0))
+        assertFailsWith<InvalidInputException> { useCase.execute(ClaimTodoInput("demo", "t-done", "claude-code")) }
+        assertFailsWith<InvalidInputException> { useCase.execute(ClaimTodoInput("demo", "t-dropped", "claude-code")) }
+        assertEquals(null, todos.listByProject("p1").single { it.id == "t-done" }.owner)
+    }
+
+    @Test
+    fun `an in-progress todo can still be claimed`() {
+        todos.insert(Todo(id = "t-wip", projectId = "p1", description = "wip", status = TodoStatus.IN_PROGRESS, createdAt = t0))
+        assertEquals("claude-code", useCase.execute(ClaimTodoInput("demo", "t-wip", "claude-code")).owner)
     }
 
     @Test

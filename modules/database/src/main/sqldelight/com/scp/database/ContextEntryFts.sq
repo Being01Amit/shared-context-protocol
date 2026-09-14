@@ -51,8 +51,7 @@ WHERE context_entry_fts MATCH :query
 ORDER BY fts_rank
 LIMIT :limit;
 
-countIndex:
-SELECT count(*) FROM context_entry_fts;
-
--- The FTS5 'rebuild' repair command is not expressible in SQLDelight's grammar
--- (single-column special insert); it lives as a raw statement in FtsAdmin.rebuild().
+-- The FTS5 'rebuild' and 'integrity-check' commands are not expressible in SQLDelight's grammar
+-- (special inserts); they live as raw statements in FtsAdmin. There is deliberately no count
+-- query here: count(*) on an external-content table reads the content table, so it can never
+-- reveal a diverged index.

@@ -45,7 +45,7 @@ public class SqlSearchIndex(
         return rows.map { row -> row.toHit(tagsByEntry[row.id].orEmpty()) }
     }
 
-    override fun indexedEntryCount(): Long = database.contextEntryFtsQueries.countIndex().executeAsOne()
+    override fun isConsistent(): Boolean = FtsAdmin.isConsistent(driver)
 
     override fun rebuild() {
         FtsAdmin.rebuild(driver)

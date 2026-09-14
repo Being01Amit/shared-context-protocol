@@ -85,6 +85,7 @@ public data class ProjectListItem(
     val id: String,
     val name: String,
     val description: String,
+    val createdAt: Instant,
     val updatedAt: Instant,
     val sessionCount: Long,
 )
