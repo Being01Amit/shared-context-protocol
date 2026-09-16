@@ -43,6 +43,40 @@ class MigrationTest {
                 """.trimIndent(),
                 "CREATE INDEX idx_session_project_status ON session(project_id, status)",
                 "CREATE INDEX idx_session_start_time ON session(start_time)",
+                """
+                CREATE TABLE context_entry (
+                    id TEXT NOT NULL PRIMARY KEY, session_id TEXT NOT NULL REFERENCES session(id),
+                    timestamp TEXT NOT NULL, title TEXT NOT NULL, content TEXT NOT NULL, type TEXT NOT NULL,
+                    priority INTEGER NOT NULL DEFAULT 3 CHECK (priority BETWEEN 1 AND 5), embedding BLOB
+                )
+                """.trimIndent(),
+                """
+                CREATE TABLE context_entry_tag (
+                    entry_id TEXT NOT NULL REFERENCES context_entry(id) ON DELETE CASCADE,
+                    tag TEXT NOT NULL, PRIMARY KEY (entry_id, tag)
+                )
+                """.trimIndent(),
+                """
+                CREATE TABLE decision (
+                    id TEXT NOT NULL PRIMARY KEY, project_id TEXT NOT NULL REFERENCES project(id),
+                    title TEXT NOT NULL, decision TEXT NOT NULL, reason TEXT NOT NULL DEFAULT '',
+                    status TEXT NOT NULL DEFAULT 'open', created_at TEXT NOT NULL, updated_at TEXT NOT NULL
+                )
+                """.trimIndent(),
+                """
+                CREATE TABLE todo (
+                    id TEXT NOT NULL PRIMARY KEY, project_id TEXT NOT NULL REFERENCES project(id),
+                    description TEXT NOT NULL, status TEXT NOT NULL DEFAULT 'open', owner TEXT,
+                    created_at TEXT NOT NULL
+                )
+                """.trimIndent(),
+                """
+                CREATE TABLE file (
+                    id TEXT NOT NULL PRIMARY KEY, project_id TEXT NOT NULL REFERENCES project(id),
+                    path TEXT NOT NULL, summary TEXT NOT NULL DEFAULT '', hash TEXT NOT NULL DEFAULT '',
+                    updated_at TEXT NOT NULL, UNIQUE (project_id, path)
+                )
+                """.trimIndent(),
                 "PRAGMA user_version = 1",
             ).forEach { sql -> driver.execute(null, sql, 0) }
         }
@@ -98,6 +132,75 @@ class MigrationTest {
 
             // next_step arrived in the 1 -> 2 migration and backfills to the empty string.
             assertTrue(sessions.listChronological("p1").all { it.nextStep.isEmpty() })
+        }
+    }
+
+    private fun text(driver: SqlDriver, sql: String): String =
+        driver
+            .executeQuery(
+                identifier = null,
+                sql = sql,
+                mapper = { c -> QueryResult.Value(if (c.next().value) c.getString(0).orEmpty() else "") },
+                parameters = 0,
+            ).value
+
+    @Test
+    fun `legacy variable-width timestamps are rewritten to the fixed width and sort chronologically`() {
+        val path = tmp.resolve("legacy.db")
+        createVersion1Database(path)
+        JdbcSqliteDriver("jdbc:sqlite:${path.toAbsolutePath()}").use { driver ->
+            driver.execute(
+                null,
+                "INSERT INTO project(id, name, created_at, updated_at) " +
+                    "VALUES ('p1', 'legacy', '2026-07-15T12:00:00Z', '2026-07-15T12:00:00.5Z')",
+                0,
+            )
+            insertLegacySession(driver, "p1", "s1", "2026-07-15T12:00:00Z")
+            // Same second, three widths. As TEXT the whole-second value sorts LAST; chronologically
+            // it is first.
+            listOf(
+                "e-whole" to "2026-07-15T12:44:34Z",
+                "e-millis" to "2026-07-15T12:44:34.732Z",
+                "e-nanos" to "2026-07-15T12:44:34.732767700Z",
+            ).forEach { (id, ts) ->
+                driver.execute(
+                    null,
+                    "INSERT INTO context_entry(id, session_id, timestamp, title, content, type) " +
+                        "VALUES ('$id', 's1', '$ts', '$id', 'c', 'FEATURE')",
+                    0,
+                )
+            }
+            driver.execute(
+                null,
+                "INSERT INTO decision(id, project_id, title, decision, created_at, updated_at) " +
+                    "VALUES ('d1', 'p1', 't', 'd', '2026-07-15T12:00:00.123456Z', '2026-07-15T12:00:00.123456Z')",
+                0,
+            )
+        }
+
+        DriverFactory.open(path).use { handle ->
+            val entries = SqlContextEntryRepository(handle.database)
+            assertEquals(
+                listOf("e-nanos", "e-millis", "e-whole"),
+                entries.findRecent("p1", 10).map { it.id },
+                "newest first across mixed widths",
+            )
+            assertEquals(
+                "2026-07-15T12:44:34.000000000Z",
+                text(handle.driver, "SELECT timestamp FROM context_entry WHERE id = 'e-whole'"),
+            )
+            assertEquals(
+                "2026-07-15T12:44:34.732767700Z",
+                text(handle.driver, "SELECT timestamp FROM context_entry WHERE id = 'e-nanos'"),
+                "already-precise values keep every digit",
+            )
+            assertEquals("2026-07-15T12:00:00.500000000Z", text(handle.driver, "SELECT updated_at FROM project"))
+            assertEquals("2026-07-15T12:00:00.123456000Z", text(handle.driver, "SELECT created_at FROM decision"))
+            // Round-trips to the same instant it was written as.
+            assertEquals(
+                kotlinx.datetime.Instant.parse("2026-07-15T12:44:34.732Z"),
+                entries.findRecent("p1", 10).single { it.id == "e-millis" }.timestamp,
+            )
         }
     }
 

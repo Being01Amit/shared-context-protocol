@@ -4,11 +4,9 @@ import kotlinx.datetime.Instant
 import kotlinx.serialization.Serializable
 
 /**
- * Domain entities. All IDs are UUID v4 strings; all timestamps are UTC [Instant]s
- * persisted as ISO 8601 text (lexicographic order == chronological order).
- *
- * The reserved `embedding` BLOB column on context entries is intentionally absent here:
- * it is unused in v1 and lives only in the schema so future vector support needs no migration.
+ * Domain entities. All IDs are UUID v4 strings; all timestamps are UTC [Instant]s persisted as
+ * ISO 8601 text at a fixed nine-digit fraction width, which is what makes lexicographic order equal
+ * chronological order (the database adapter's `toStorageText`; see migration 4 -> 5).
  */
 @Serializable
 public data class Project(

@@ -6,6 +6,7 @@ import io.konform.validation.Validation
 import io.konform.validation.constraints.maxItems
 import io.konform.validation.constraints.maxLength
 import io.konform.validation.constraints.maximum
+import io.konform.validation.constraints.minItems
 import io.konform.validation.constraints.minLength
 import io.konform.validation.constraints.minimum
 import io.konform.validation.constraints.pattern
@@ -27,6 +28,12 @@ public object McpValidations {
     private const val MIN_TOKEN_LIMIT: Int = 100
     private const val MAX_SEARCH_LIMIT: Long = 500
     private const val MAX_TIMELINE_LIMIT: Long = 10_000
+
+    /**
+     * Upper bound on vector length. Comfortably above today's common embedding sizes (384 – 4096)
+     * while stopping a malformed or hostile call from submitting an arbitrarily large array.
+     */
+    private const val MAX_EMBEDDING_DIMENSIONS: Int = 8192
 
     public val createProject: Validation<CreateProjectInput> =
         Validation {
@@ -59,6 +66,10 @@ public object McpValidations {
                 minLength(1)
                 maxLength(MAX_TAG_LENGTH)
             }
+            NewEntry::embedding ifPresent {
+                minItems(1)
+                maxItems(MAX_EMBEDDING_DIMENSIONS)
+            }
         }
 
     public val updateContext: Validation<UpdateContextInput> =
@@ -85,6 +96,13 @@ public object McpValidations {
             }
             UpdateContextInput::entries onEach {
                 run(newEntry)
+            }
+            // Cosine similarity between vectors of different lengths is undefined and scores 0, so a
+            // mixed batch would silently never rank semantically. Reject it where it can be seen.
+            UpdateContextInput::entries {
+                constrain("all entry embeddings in one call must have the same number of dimensions") { entries ->
+                    entries.mapNotNull { it.embedding?.size }.distinct().size <= 1
+                }
             }
             UpdateContextInput::decisions {
                 maxItems(MAX_BATCH)
@@ -140,6 +158,10 @@ public object McpValidations {
             }
             HydrateContextInput::tokenLimit ifPresent {
                 minimum(MIN_TOKEN_LIMIT)
+            }
+            HydrateContextInput::embedding ifPresent {
+                minItems(1)
+                maxItems(MAX_EMBEDDING_DIMENSIONS)
             }
         }
 

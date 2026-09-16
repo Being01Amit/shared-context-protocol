@@ -33,8 +33,18 @@ class FixedClock(var current: Instant = Instant.parse("2026-07-04T12:00:00Z")) :
     override fun now(): Instant = current
 }
 
-class FakeGitStateReader(var current: GitState? = null) : GitStateReader {
-    override fun read(): GitState? = current
+class FakeGitStateReader(
+    var current: GitState? = null,
+    private val transactions: PassThroughTransactionRunner? = null,
+) : GitStateReader {
+    /** Reads made while [transactions] had a write transaction open — must stay 0. */
+    var readsInsideTransaction: Int = 0
+        private set
+
+    override fun read(): GitState? {
+        if (transactions?.inTransaction == true) readsInsideTransaction++
+        return current
+    }
 }
 
 class SequentialIds : IdGenerator {
@@ -49,10 +59,17 @@ class SequentialIds : IdGenerator {
 class PassThroughTransactionRunner : TransactionRunner {
     var transactionCount: Int = 0
         private set
+    var inTransaction: Boolean = false
+        private set
 
     override fun <T> inWriteTransaction(block: () -> T): T {
         transactionCount++
-        return block()
+        inTransaction = true
+        try {
+            return block()
+        } finally {
+            inTransaction = false
+        }
     }
 }
 
@@ -102,7 +119,7 @@ class FakeSessionRepository : SessionRepository {
         store[id] =
             s.copy(
                 status = SessionStatus.CLOSED,
-                endTime = endTime,
+                endTime = s.endTime ?: endTime,
                 summary = summary ?: s.summary,
                 tokenUsage = tokenUsage ?: s.tokenUsage,
                 nextStep = nextStep ?: s.nextStep,
@@ -252,7 +269,7 @@ class FakeSearchIndex : SearchIndex {
             .take(request.limit.toInt())
     }
 
-    override fun indexedEntryCount(): Long = store.size.toLong()
+    override fun isConsistent(): Boolean = true
 
     // No real FTS index behind this fake, so there is nothing to rebuild.
     override fun rebuild() = Unit

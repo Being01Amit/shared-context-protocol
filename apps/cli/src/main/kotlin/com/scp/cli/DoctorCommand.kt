@@ -12,7 +12,7 @@ import kotlin.time.Duration.Companion.hours
  *  1. config.yaml parses and validates (implicit: components built at all)
  *  2. journal_mode is WAL
  *  3. foreign_keys is ON
- *  4. FTS index row count matches context_entry count (offers the rebuild repair)
+ *  4. FTS index passes FTS5's integrity check against context_entry (runs the rebuild repair)
  *  5. open sessions older than 24h (likely abandoned)
  */
 internal class DoctorCommand : ScpCommand("doctor") {
@@ -44,19 +44,19 @@ internal class DoctorCommand : ScpCommand("doctor") {
             echo("foreign_keys           FAIL (was '$foreignKeys', expected '1')")
         }
 
+        // FTS5's own integrity check against context_entry. Not a row-count comparison: for an
+        // external-content table count(*) is read from the content table, so counts always match.
         val entryCount =
             components.handle.database.contextEntryQueries
                 .countAll()
                 .executeAsOne()
-        val indexCount = components.searchIndex.indexedEntryCount()
-        if (entryCount == indexCount) {
-            echo("fts index              OK ($indexCount rows == $entryCount entries)")
+        if (components.searchIndex.isConsistent()) {
+            echo("fts index              OK (integrity check passed, $entryCount entries)")
         } else {
             failures++
-            echo("fts index              FAIL ($indexCount rows != $entryCount entries) — repairing via rebuild...")
+            echo("fts index              FAIL (index does not match $entryCount entries) — repairing via rebuild...")
             components.searchIndex.rebuild()
-            val repaired = components.searchIndex.indexedEntryCount()
-            val verdict = if (repaired == entryCount) "repaired OK" else "still diverged after rebuild"
+            val verdict = if (components.searchIndex.isConsistent()) "repaired OK" else "still diverged after rebuild"
             echo("fts index              $verdict")
         }
 
@@ -76,17 +76,19 @@ internal class DoctorCommand : ScpCommand("doctor") {
 
         // Silence is this system's worst failure mode: an agent that never calls update_context
         // loses everything with no error anywhere. A project that has existed for a while with
-        // zero sessions is the only observable symptom, so surface it.
+        // zero sessions is the only observable symptom, so surface it. Age is measured from creation,
+        // not updatedAt: update_project and claim_todo touch updatedAt without writing any context, so
+        // keying on it would un-flag a project every time someone edited its description.
         val silent =
             components.listProjects
                 .execute()
                 .projects
-                .filter { it.sessionCount == 0L && it.updatedAt < Clock.System.now() - 24.hours }
+                .filter { it.sessionCount == 0L && it.createdAt < Clock.System.now() - 24.hours }
         if (silent.isEmpty()) {
             echo("context capture        OK (no silent projects)")
         } else {
             echo("context capture        WARN (${silent.size} project(s) older than 24h with no sessions stored):")
-            silent.forEach { echo("  - ${it.name} (created ${it.updatedAt}) — nothing has ever called update_context") }
+            silent.forEach { echo("  - ${it.name} (created ${it.createdAt}) — nothing has ever called update_context") }
             echo("                       Agents must call update_context/save_note, or context is being lost.")
         }
 

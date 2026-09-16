@@ -3,6 +3,7 @@ package com.scp.core.usecase
 import com.scp.model.InvalidInputException
 import com.scp.model.NotFoundException
 import com.scp.model.Todo
+import com.scp.model.TodoStatus
 import com.scp.model.mcp.ClaimTodoInput
 import com.scp.model.mcp.ClaimTodoResult
 import com.scp.model.port.Clock
@@ -42,8 +43,14 @@ public class ClaimTodoUseCase(
     }
 
     private fun requireClaimable(todo: Todo, toolName: String) {
-        if (todo.owner != null && todo.owner != toolName) {
-            throw InvalidInputException("Todo '${todo.id}' is already claimed by '${todo.owner}'")
-        }
+        val problem =
+            when {
+                // Finished work can't be taken on; reopen it with update_todo_status first.
+                todo.status == TodoStatus.DONE || todo.status == TodoStatus.DROPPED ->
+                    "Todo '${todo.id}' is ${todo.status.dbValue} — set it back to open with update_todo_status before claiming it"
+                todo.owner != null && todo.owner != toolName -> "Todo '${todo.id}' is already claimed by '${todo.owner}'"
+                else -> null
+            }
+        if (problem != null) throw InvalidInputException(problem)
     }
 }

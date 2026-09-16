@@ -45,6 +45,30 @@ internal val cliJson: Json =
         coerceInputValues = true
     }
 
+/**
+ * Reads a `--json` payload file into [T], turning every way that can fail into a one-line CLI error
+ * instead of a stack trace. A leading UTF-8 byte-order mark is dropped first: Windows PowerShell 5.1's
+ * `Set-Content -Encoding utf8` and `Out-File` write one, and it is not valid JSON.
+ */
+internal inline fun <reified T> readJsonPayload(path: Path): T {
+    val text =
+        try {
+            Files.readString(path).removePrefix(UTF8_BOM)
+        } catch (e: java.io.IOException) {
+            throw CliktError("Cannot read --json file '$path': ${e.message ?: e::class.simpleName}", cause = e)
+        }
+    return try {
+        cliJson.decodeFromString<T>(text)
+    } catch (e: IllegalArgumentException) {
+        // SerializationException (malformed JSON, missing fields, bad enum values) extends this.
+        throw CliktError("Invalid --json payload in '$path': ${e.message?.lineSequence()?.firstOrNull()}", cause = e)
+    }
+}
+
+private const val BYTE_ORDER_MARK_CODE_POINT: Int = 0xFEFF
+
+internal val UTF8_BOM: String = Char(BYTE_ORDER_MARK_CODE_POINT).toString()
+
 internal fun baseDir(): Path =
     Path
         .of(System.getProperty("scp.home") ?: System.getProperty("user.dir"))
@@ -134,7 +158,7 @@ internal class UpdateCommand : ScpCommand("update") {
     override fun run(components: CliComponents) {
         val input =
             if (jsonFile != null) {
-                cliJson.decodeFromString<UpdateContextInput>(Files.readString(Path.of(jsonFile!!)))
+                readJsonPayload<UpdateContextInput>(Path.of(jsonFile!!))
             } else {
                 UpdateContextInput(
                     projectName = project,

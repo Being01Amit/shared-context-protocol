@@ -39,10 +39,12 @@ SELECT * FROM session WHERE id = :id;
 findOpenByProject:
 SELECT * FROM session WHERE project_id = :projectId AND status = 'open' ORDER BY start_time_epoch_nanos;
 
+-- end_time keeps its first value: a late append to an already-closed session (docs/04 rule 1)
+-- must not rewrite when that session actually ended.
 closeSession:
 UPDATE session
 SET status      = 'closed',
-    end_time    = :endTime,
+    end_time    = COALESCE(end_time, :endTime),
     summary     = COALESCE(:summary, summary),
     token_usage = COALESCE(:tokenUsage, token_usage),
     next_step   = COALESCE(:nextStep, next_step)

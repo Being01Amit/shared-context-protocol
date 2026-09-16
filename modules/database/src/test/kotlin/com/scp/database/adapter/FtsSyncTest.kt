@@ -7,6 +7,7 @@ import org.junit.jupiter.api.io.TempDir
 import java.nio.file.Path
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 
 /** The FTS5 external-content index must track context_entry through the sync triggers (ADR-8). */
@@ -48,12 +49,7 @@ class FtsSyncTest {
     fun `insert is indexed via trigger`() {
         SqlContextEntryRepository(handle.database)
             .insert(Fixtures.entry(sessionId, title = "JWT refresh flow", content = "rotate tokens hourly"))
-        assertEquals(
-            1,
-            handle.database.contextEntryFtsQueries
-                .countIndex()
-                .executeAsOne(),
-        )
+        assertTrue(FtsAdmin.isConsistent(handle.driver))
         assertEquals(1, search("jwt").size)
         assertEquals(1, search("rotate").size, "content is indexed, not just title")
     }
@@ -70,12 +66,7 @@ class FtsSyncTest {
 
         handle.driver.execute(null, "DELETE FROM context_entry WHERE id = '${entry.id}'", 0)
         assertTrue(search("omega").isEmpty())
-        assertEquals(
-            0,
-            handle.database.contextEntryFtsQueries
-                .countIndex()
-                .executeAsOne(),
-        )
+        assertTrue(FtsAdmin.isConsistent(handle.driver), "delete trigger kept the index in sync")
     }
 
     @Test
@@ -118,15 +109,27 @@ class FtsSyncTest {
     }
 
     @Test
-    fun `rebuild repairs the index`() {
+    fun `a healthy index passes the integrity check`() {
         SqlContextEntryRepository(handle.database).insert(Fixtures.entry(sessionId, title = "needle"))
-        FtsAdmin.rebuild(handle.driver)
-        assertEquals(1, search("needle").size)
-        assertEquals(
-            1,
-            handle.database.contextEntryFtsQueries
-                .countIndex()
-                .executeAsOne(),
+        assertTrue(FtsAdmin.isConsistent(handle.driver))
+    }
+
+    @Test
+    fun `integrity check detects an index that diverged from its entries, and rebuild repairs it`() {
+        SqlContextEntryRepository(handle.database).insert(Fixtures.entry(sessionId, title = "needle", content = "haystack"))
+        // Drop the entry's postings from the index only, leaving the context_entry row in place —
+        // the drift a row count cannot see (for external content, count(*) reads the content table).
+        handle.driver.execute(
+            null,
+            "INSERT INTO context_entry_fts(context_entry_fts, rowid, title, content) " +
+                "SELECT 'delete', rowid, title, content FROM context_entry",
+            0,
         )
+        assertEquals(0, search("needle").size, "precondition: the index really is broken")
+        assertFalse(FtsAdmin.isConsistent(handle.driver))
+
+        FtsAdmin.rebuild(handle.driver)
+        assertTrue(FtsAdmin.isConsistent(handle.driver))
+        assertEquals(1, search("needle").size)
     }
 }

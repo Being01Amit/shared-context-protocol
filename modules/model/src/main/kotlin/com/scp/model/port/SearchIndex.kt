@@ -26,9 +26,13 @@ public data class SearchHit(
 public interface SearchIndex {
     public fun search(request: SearchRequest): List<SearchHit>
 
-    /** Rows in the FTS index — `scp doctor` compares this against the context entry count. */
-    public fun indexedEntryCount(): Long
+    /**
+     * Whether the index matches the stored entries — `scpx doctor`'s health check. Must verify the
+     * index itself: an index row count is not evidence, since for an external-content FTS5 table
+     * it is read from the content table and always matches.
+     */
+    public fun isConsistent(): Boolean
 
-    /** FTS5 external-content 'rebuild' — the documented repair when counts diverge. */
+    /** FTS5 external-content 'rebuild' — the documented repair when the index has diverged. */
     public fun rebuild()
 }

@@ -30,14 +30,16 @@ public class SaveNoteUseCase(
     private val gitStateReader: GitStateReader,
     private val redactionPatterns: List<RedactionPattern> = Redaction.defaultPatterns,
 ) {
-    private val resolver = SessionResolver(sessions, clock, ids, gitStateReader)
+    private val resolver = SessionResolver(sessions, clock, ids)
 
     public fun execute(input: SaveNoteInput): SaveNoteResult {
         val project =
             projects.findByName(input.projectName)
                 ?: throw NotFoundException("Project '${input.projectName}' not found")
+        // Outside the transaction: this shells out to git and must not hold the write lock.
+        val gitState = gitStateReader.read()
         return transactions.inWriteTransaction {
-            val resolution = resolver.resolve(project.id, input.toolName, explicitSessionId = null)
+            val resolution = resolver.resolve(project.id, input.toolName, explicitSessionId = null, gitState = gitState)
             val now = clock.now()
             val entry =
                 ContextEntry(

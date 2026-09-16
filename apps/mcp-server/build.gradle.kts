@@ -29,6 +29,14 @@ distributions {
     }
 }
 
+// Stamps the build version (the release workflow passes -Pversion=x.y.z) into the jar so the server
+// reports its real version in the MCP initialize handshake instead of a hardcoded string.
+tasks.jar {
+    manifest {
+        attributes("Implementation-Version" to project.version.toString())
+    }
+}
+
 dependencies {
     implementation(project(":modules:skills"))
     implementation(project(":modules:core"))

@@ -11,6 +11,8 @@ plugins {
 
 // `-Pversion=x.y.z` only sets the invoked (root) project's version by default; this
 // propagates it to every subproject so release archives are named/tagged consistently.
+// Without -Pversion, findProperty("version") is Gradle's "unspecified" placeholder rather than null,
+// so the fallback has to test for it explicitly or it never applies.
 allprojects {
-    version = rootProject.findProperty("version") as String? ?: "0.0.0-dev"
+    version = (rootProject.findProperty("version") as String?)?.takeUnless { it == "unspecified" } ?: "0.0.0-dev"
 }

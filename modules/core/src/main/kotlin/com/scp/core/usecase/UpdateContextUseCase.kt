@@ -46,16 +46,21 @@ public class UpdateContextUseCase(
     private val gitStateReader: GitStateReader,
     private val redactionPatterns: List<RedactionPattern> = Redaction.defaultPatterns,
 ) {
-    private val resolver = SessionResolver(sessions, clock, ids, gitStateReader)
+    private val resolver = SessionResolver(sessions, clock, ids)
 
     public fun execute(input: UpdateContextInput): UpdateContextResult {
         val project =
             projects.findByName(input.projectName)
                 ?: throw NotFoundException("Project '${input.projectName}' not found — create it with create_project")
 
+        // Read before the transaction: this shells out to git (two subprocesses, each with a
+        // timeout), and doing it inside inWriteTransaction would hold the database write lock —
+        // blocking every other writer — for as long as git takes.
+        val gitState = gitStateReader.read()
+
         val outcome =
             transactions.inWriteTransaction {
-                val resolution = resolver.resolve(project.id, input.toolName, input.sessionId)
+                val resolution = resolver.resolve(project.id, input.toolName, input.sessionId, gitState)
                 val session = resolution.session
                 val now = clock.now()
 
@@ -134,7 +139,10 @@ public class UpdateContextUseCase(
         ContextEntry(
             id = ids.newId(),
             sessionId = sessionId,
-            timestamp = timestamp ?: now,
+            // Clamped to now: the caller controls this value, and a future timestamp would pin the
+            // entry's recency term at its maximum and keep it inside every newest-first candidate
+            // fetch indefinitely — a ranking lever as strong as priority 5.
+            timestamp = timestamp?.let { minOf(it, now) } ?: now,
             title = redact(title),
             content = redact(content),
             type = type,

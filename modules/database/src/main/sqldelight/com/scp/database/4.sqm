@@ -1,0 +1,68 @@
+-- Migration 4 -> 5: store every timestamp at a fixed width.
+--
+-- Timestamps are ISO-8601 TEXT written from kotlinx Instant.toString(), which trims trailing zero
+-- groups from the fraction, so values are 0, 3, 6 or 9 fractional digits wide. TEXT comparison is
+-- not chronological across those widths ('Z' outranks '.' and every digit), so ORDER BY and range
+-- filters on these columns misorder rows that fall within the same second. Migration 2 -> 3 fixed
+-- that for session ordering with start_time_epoch_nanos; context_entry, decision and file kept it.
+--
+-- From this version on the application writes exactly 9 fractional digits
+-- ('YYYY-MM-DDTHH:MM:SS.nnnnnnnnnZ', 30 characters), where lexicographic order IS chronological.
+-- This rewrites existing values into that form without losing precision: a missing fraction becomes
+-- '.000000000', a shorter one is right-padded with zeros. Values already 30 characters wide, and
+-- anything not shaped like a UTC ISO timestamp, are left untouched. context_entry's FTS update
+-- trigger fires only on title/content, so the search index is not touched.
+
+UPDATE project SET created_at =
+    CASE WHEN substr(created_at, 20, 1) = '.'
+         THEN substr(created_at, 1, 20) || substr(substr(created_at, 21, length(created_at) - 21) || '000000000', 1, 9) || 'Z'
+         ELSE substr(created_at, 1, 19) || '.000000000Z' END
+WHERE length(created_at) BETWEEN 20 AND 29 AND created_at LIKE '____-__-__T__:__:__%Z';
+
+UPDATE project SET updated_at =
+    CASE WHEN substr(updated_at, 20, 1) = '.'
+         THEN substr(updated_at, 1, 20) || substr(substr(updated_at, 21, length(updated_at) - 21) || '000000000', 1, 9) || 'Z'
+         ELSE substr(updated_at, 1, 19) || '.000000000Z' END
+WHERE length(updated_at) BETWEEN 20 AND 29 AND updated_at LIKE '____-__-__T__:__:__%Z';
+
+UPDATE session SET start_time =
+    CASE WHEN substr(start_time, 20, 1) = '.'
+         THEN substr(start_time, 1, 20) || substr(substr(start_time, 21, length(start_time) - 21) || '000000000', 1, 9) || 'Z'
+         ELSE substr(start_time, 1, 19) || '.000000000Z' END
+WHERE length(start_time) BETWEEN 20 AND 29 AND start_time LIKE '____-__-__T__:__:__%Z';
+
+UPDATE session SET end_time =
+    CASE WHEN substr(end_time, 20, 1) = '.'
+         THEN substr(end_time, 1, 20) || substr(substr(end_time, 21, length(end_time) - 21) || '000000000', 1, 9) || 'Z'
+         ELSE substr(end_time, 1, 19) || '.000000000Z' END
+WHERE end_time IS NOT NULL AND length(end_time) BETWEEN 20 AND 29 AND end_time LIKE '____-__-__T__:__:__%Z';
+
+UPDATE context_entry SET timestamp =
+    CASE WHEN substr(timestamp, 20, 1) = '.'
+         THEN substr(timestamp, 1, 20) || substr(substr(timestamp, 21, length(timestamp) - 21) || '000000000', 1, 9) || 'Z'
+         ELSE substr(timestamp, 1, 19) || '.000000000Z' END
+WHERE length(timestamp) BETWEEN 20 AND 29 AND timestamp LIKE '____-__-__T__:__:__%Z';
+
+UPDATE decision SET created_at =
+    CASE WHEN substr(created_at, 20, 1) = '.'
+         THEN substr(created_at, 1, 20) || substr(substr(created_at, 21, length(created_at) - 21) || '000000000', 1, 9) || 'Z'
+         ELSE substr(created_at, 1, 19) || '.000000000Z' END
+WHERE length(created_at) BETWEEN 20 AND 29 AND created_at LIKE '____-__-__T__:__:__%Z';
+
+UPDATE decision SET updated_at =
+    CASE WHEN substr(updated_at, 20, 1) = '.'
+         THEN substr(updated_at, 1, 20) || substr(substr(updated_at, 21, length(updated_at) - 21) || '000000000', 1, 9) || 'Z'
+         ELSE substr(updated_at, 1, 19) || '.000000000Z' END
+WHERE length(updated_at) BETWEEN 20 AND 29 AND updated_at LIKE '____-__-__T__:__:__%Z';
+
+UPDATE todo SET created_at =
+    CASE WHEN substr(created_at, 20, 1) = '.'
+         THEN substr(created_at, 1, 20) || substr(substr(created_at, 21, length(created_at) - 21) || '000000000', 1, 9) || 'Z'
+         ELSE substr(created_at, 1, 19) || '.000000000Z' END
+WHERE length(created_at) BETWEEN 20 AND 29 AND created_at LIKE '____-__-__T__:__:__%Z';
+
+UPDATE file SET updated_at =
+    CASE WHEN substr(updated_at, 20, 1) = '.'
+         THEN substr(updated_at, 1, 20) || substr(substr(updated_at, 21, length(updated_at) - 21) || '000000000', 1, 9) || 'Z'
+         ELSE substr(updated_at, 1, 19) || '.000000000Z' END
+WHERE length(updated_at) BETWEEN 20 AND 29 AND updated_at LIKE '____-__-__T__:__:__%Z';
